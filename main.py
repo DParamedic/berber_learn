@@ -2,6 +2,13 @@ import os
 import win32con, win32api
 from sys import platform
 
+from test import test
+
+def main():
+    f_end_point = "./.txt_lib/"
+    if directory_find(f_end_point):
+       cmd_runner(f_end_point)
+    
 class EndPoints:
     def __init__(self, struct: int, expansion='.txt'):
         self.expansion = expansion
@@ -68,31 +75,51 @@ def txt_clear(path, end_point):
         write_line.write('')
 
 def txt_writer(path, end_point, inp_dict):
-    pass
+    new_path = path + end_point.normal_view()
+    with open(new_path, 'w', encoding='utf-8') as read_line:
+        for item in inp_dict:
+            read_line.write(f'{item}/{inp_dict[item][0]}/{inp_dict[item][1]}\n')
 
-def engine():
-    f_end_point = "./.txt_lib/"
-    if directory_find(f_end_point):
-        global_down_dict, global_boost_dict = {}, {}
+def engine(path):
+    global_down_dict, global_boost_dict = {}, {}
+    
+    for i in end_point_generator():
+        word_dict, down_dict, boost_dict = txt_reader(path, i)
+        txt_clear(path, i)
         
-        for i in end_point_generator():
-            word_dict, down_dict, boost_dict = txt_reader(f_end_point, i)
-            txt_clear(f_end_point, i)
+        if i.struct != 1:
+            global_down_dict.update(down_dict)
+            txt_writer(path, i, word_dict.update(global_boost_dict))
             
-            if i.struct != 1:
-                global_down_dict.update(down_dict)
-                txt_writer(f_end_point, i, word_dict.update(global_boost_dict))
-                
-                # word_dict.clear()
-                global_boost_dict.clear()
-                # down_dict.clear()
-                
-                global_boost_dict.update(boost_dict)
-                
-            else:
-                global_down_dict.update(down_dict)
-                global_down_dict.update(word_dict)
-                global_boost_dict.update(boost_dict)
+            global_boost_dict.clear()
+            global_boost_dict.update(boost_dict)
+            
         else:
-            txt_writer(f_end_point, EndPoints(1), global_down_dict)
+            global_down_dict.update(down_dict)
+            global_down_dict.update(word_dict)
+            global_boost_dict.update(boost_dict)
+    else:
+        txt_writer(path, EndPoints(1), global_down_dict)
             
+def new_word_writer(path, word: str):
+    new_path = path + EndPoints(1).normal_view()
+    translation = input('Перевод: ')
+    if translation == '':
+        return
+    
+    with open(new_path, 'a', encoding='utf-8') as write_line:
+        write_line.write(f'{word}/{translation}/1\n')
+        
+def cmd_runner(path):
+    while True:
+        cmd_status = input('> ')
+        
+        if cmd_status == '':
+            engine(path)
+        elif cmd_status == 'stop_work':
+            break
+        else:
+            new_word_writer(path, cmd_status)
+            
+if __name__ == '__main__':
+    main()
