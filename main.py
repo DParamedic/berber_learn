@@ -1,10 +1,12 @@
 import os
 import win32con, win32api
 from sys import platform
+from typing import TypeVar, Union
 
-from test import test
-
-def main():
+path_to_file = TypeVar('pathlib.Path')
+end_point_type = TypeVar('EndPoints')
+generator = TypeVar('Generator')
+def main() -> None:
     f_end_point = "./.txt_lib/"
     if directory_find(f_end_point):
        cmd_runner(f_end_point)
@@ -14,10 +16,10 @@ class EndPoints:
         self.expansion = expansion
         self.struct = struct
         self = struct, expansion
-    def normal_view(self):
+    def normal_view(self) -> str:
         return str(self.struct) + self.expansion
     
-def directory_find(path):
+def directory_find(path: Union[str, path_to_file]) -> bool:
     if not os.path.exists(path):
         os.mkdir(path)
         if platform == "win32":
@@ -30,7 +32,7 @@ def directory_find(path):
     else:
         return True
     
-def txt_reader(path, end_point):
+def txt_reader(path: Union[str, path_to_file], end_point: end_point_type) -> tuple[dict]:
     max_value = end_point.struct
     word_dict = {}
     down_dict = {}
@@ -63,24 +65,24 @@ def txt_reader(path, end_point):
                 
     return word_dict, down_dict, boost_dict
 
-def end_point_generator(limiter: int=12, start: int=1, degree: int=2):
+def end_point_generator(limiter: int=12, start: int=1, degree: int=2) -> generator:
     for i in range(limiter):
         yield EndPoints(start)
         start *= degree
             
-def txt_clear(path, end_point):
+def txt_clear(path: Union[str, path_to_file], end_point: end_point_type) -> None:
     new_path = path + end_point.normal_view()
     
     with open(new_path, 'w') as write_line:
         write_line.write('')
 
-def txt_writer(path, end_point, inp_dict):
+def txt_writer(path: Union[str, path_to_file], end_point: end_point_type, inp_dict: dict) -> None:
     new_path = path + end_point.normal_view()
     with open(new_path, 'w', encoding='utf-8') as read_line:
         for item in inp_dict:
             read_line.write(f'{item}/{inp_dict[item][0]}/{inp_dict[item][1]}\n')
 
-def engine(path):
+def engine(path: Union[str, path_to_file]) -> None:
     global_down_dict, global_boost_dict = {}, {}
     
     for i in end_point_generator():
@@ -101,16 +103,25 @@ def engine(path):
     else:
         txt_writer(path, EndPoints(1), global_down_dict)
             
-def new_word_writer(path, word: str):
-    new_path = path + EndPoints(1).normal_view()
+def new_word_writer(path: Union[str, path_to_file], word: str) -> None:
+    new_path = path + EndPoints(0).normal_view()
     translation = input('Перевод: ')
-    if translation == '':
-        return
-    
+    assert translation == ''
+            
     with open(new_path, 'a', encoding='utf-8') as write_line:
         write_line.write(f'{word}/{translation}/1\n')
         
-def cmd_runner(path):
+        
+def overwriting(path: Union[str, path_to_file], end_point_1: end_point_type=EndPoints(0), end_point_2: end_point_type=EndPoints(1)) -> None:
+    new_path_1 = path + end_point_1.normal_view()
+    new_path_2 = path + end_point_2.normal_view()
+    with open(new_path_1, 'r') as read_line:
+        with open(new_path_2, 'a', encoding='utf-8') as write_line:
+            for line in read_line:
+                write_line.write(line)
+    txt_clear(path, end_point_1.normal_view())
+                
+def cmd_runner(path: Union[str, path_to_file]) -> None:
     while True:
         cmd_status = input('> ')
         
@@ -120,6 +131,8 @@ def cmd_runner(path):
             break
         else:
             new_word_writer(path, cmd_status)
-            
+    
+    overwriting(path)
+    
 if __name__ == '__main__':
-    main()
+    directory_find('./test_lib/')
