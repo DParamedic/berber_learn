@@ -1,11 +1,12 @@
 import os
 import win32con, win32api
 from sys import platform
-from typing import TypeVar, Union
+from typing import TypeVar, Union, Generator
 
 path_to_file = TypeVar('pathlib.Path')
 end_point_type = TypeVar('EndPoints')
-generator = TypeVar('Generator')
+
+
 def main() -> None:
     f_end_point = "./.txt_lib/"
     if directory_find(f_end_point):
@@ -18,6 +19,8 @@ class EndPoints:
         self = struct, expansion
     def normal_view(self) -> str:
         return str(self.struct) + self.expansion
+    def __eq__(self, other):
+        return self.struct == other.struct and self.expansion == other.expansion
     
 def directory_find(path: Union[str, path_to_file]) -> bool:
     if not os.path.exists(path):
@@ -39,33 +42,34 @@ def txt_reader(path: Union[str, path_to_file], end_point: end_point_type) -> tup
     boost_dict = {}
     new_path = path + end_point.normal_view()
     
-    with open(new_path, 'r') as read_line:
-        word_dict = {i:[j, n] for i, j, n in [line.split('/') for line in read_line]}
-        
-        for i in word_dict:
-            word_dict_i = word_dict[i]
-            if word_dict_i[1] == 0:
-                input_translatte = input(f'Translate {i} is: ')
-                if input_translatte == word_dict_i[0]:
-                    print('Прекрасно!')
-                    word_dict_i[1] = max_value*2
-                else:
-                    print(f'Нет. Правильно: {word_dict_i[0]}')
-                    word_dict_i[1] = None
-            else: word_dict_i[1] -= 1
+    if os.path.exists(new_path):
+        with open(new_path, 'r', encoding='utf-8') as read_line:
+            tmp_dict = {i:[j, int(n)] for i, j, n in [line.split('/') for line in read_line]}
             
-        for i in word_dict:
-            word_dict_i = word_dict[i]
-            if word_dict_i[1] is None:
-                down_dict[i] = word_dict_i[1], 1
-                del word_dict_i
-            elif word_dict_i[1] > max_value:
-                boost_dict[i] = word_dict_i
-                del word_dict_i
+            for i in tmp_dict:
+                if tmp_dict[i][1] == 0:
+                    input_translatte = input(f'Translate {i} is: ')
+                    if input_translatte == tmp_dict[i][0]:
+                        print('Прекрасно!')
+                        tmp_dict[i][1] = max_value*2
+                    else:
+                        print(f'Нет. Правильно: {tmp_dict[i][0]}')
+                        tmp_dict[i][1] = None
+                else: tmp_dict[i][1] -= 1
                 
-    return word_dict, down_dict, boost_dict
+            for i in tmp_dict:
+                if tmp_dict[i][1] is None:
+                    down_dict[i] = tmp_dict[i][0], 1
+                elif tmp_dict[i][1] > max_value:
+                    boost_dict[i] = tmp_dict[i]
+                else:
+                    word_dict[i] = tmp_dict[i]
+                    
+        return word_dict, down_dict, boost_dict
+    else: 
+        return {}, {}, {}
 
-def end_point_generator(limiter: int=12, start: int=1, degree: int=2) -> generator:
+def end_point_generator(limiter: int=12, start: int=1, degree: int=2) -> Generator:
     for i in range(limiter):
         yield EndPoints(start)
         start *= degree
@@ -87,11 +91,16 @@ def engine(path: Union[str, path_to_file]) -> None:
     
     for i in end_point_generator():
         word_dict, down_dict, boost_dict = txt_reader(path, i)
+        if not (word_dict or down_dict or boost_dict):
+            pass
+        # It would be correct to introduce micro-optimization, but it is still difficult to figure out how to do it correctly, because when creating a restriction, the file is not created for writing and the contents of the buffer disappear.
+        
         txt_clear(path, i)
         
         if i.struct != 1:
             global_down_dict.update(down_dict)
-            txt_writer(path, i, word_dict.update(global_boost_dict))
+            word_dict.update(global_boost_dict)
+            txt_writer(path, i, word_dict)
             
             global_boost_dict.clear()
             global_boost_dict.update(boost_dict)
@@ -106,20 +115,21 @@ def engine(path: Union[str, path_to_file]) -> None:
 def new_word_writer(path: Union[str, path_to_file], word: str) -> None:
     new_path = path + EndPoints(0).normal_view()
     translation = input('Перевод: ')
-    assert translation == ''
-            
-    with open(new_path, 'a', encoding='utf-8') as write_line:
-        write_line.write(f'{word}/{translation}/1\n')
+    if translation != '':
+        with open(new_path, 'a', encoding='utf-8') as write_line:
+            write_line.write(f'{word.capitalize()}/{translation.capitalize()}/1\n')
+    else:
+        return False
         
         
 def overwriting(path: Union[str, path_to_file], end_point_1: end_point_type=EndPoints(0), end_point_2: end_point_type=EndPoints(1)) -> None:
     new_path_1 = path + end_point_1.normal_view()
     new_path_2 = path + end_point_2.normal_view()
-    with open(new_path_1, 'r') as read_line:
+    with open(new_path_1, 'r', encoding='utf-8') as read_line:
         with open(new_path_2, 'a', encoding='utf-8') as write_line:
             for line in read_line:
                 write_line.write(line)
-    txt_clear(path, end_point_1.normal_view())
+    txt_clear(path, end_point_1)
                 
 def cmd_runner(path: Union[str, path_to_file]) -> None:
     while True:
@@ -135,4 +145,4 @@ def cmd_runner(path: Union[str, path_to_file]) -> None:
     overwriting(path)
     
 if __name__ == '__main__':
-    directory_find('./test_lib/')
+    main()
