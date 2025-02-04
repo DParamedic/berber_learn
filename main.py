@@ -7,6 +7,25 @@ import win32con, win32api
 path_to_file = TypeVar('pathlib.Path')
 end_point_type = TypeVar('EndPoints')
 
+
+class EndPoints:
+    def __init__(self, struct: int, expansion='.txt'):
+        self.expansion = expansion
+        self.struct = struct
+        self = struct, expansion
+    def normal_view(self) -> str:
+        return str(self.struct) + self.expansion
+    def __eq__(self, other):
+        return self.struct == other.struct \
+            and self.expansion == other.expansion
+    
+def end_point_generator(limiter: int=12,
+                        start: int=1, degree: int=2) -> Generator:
+    for i in range(limiter):
+        yield EndPoints(start)
+        start *= degree
+            
+
 def main() -> None:
     f_end_point = "./.txt_lib/"
     if directory_find(f_end_point):
@@ -26,11 +45,14 @@ def directory_find(path: Union[str, path_to_file]) -> bool:
         return True
     
 def cmd_runner(path: Union[str, path_to_file]) -> None:
+    count = 1
     while True:
         cmd_status = input('> ')
         if cmd_status == '':
-            engine(path)
-        elif cmd_status == 'stop_work':
+            if count > 0:
+                engine(path)
+                count -= 1
+        elif cmd_status == 'stop_work' or cmd_status == 's_w':
             break
         else:
             new_word_writer(path, cmd_status)
@@ -43,7 +65,11 @@ def engine(path: Union[str, path_to_file]) -> None:
         word_dict, down_dict, boost_dict = txt_reader(path, i)
         if not (word_dict or down_dict or boost_dict):
             pass
-        # It would be correct to introduce micro-optimization, but it is still difficult to figure out how to do it correctly, because when creating a restriction, the file is not created for writing and the contents of the global_boost_dict disappear.
+        # It would be correct to introduce micro-optimization, but it
+        # is still difficult to figure out how to do it correctly,
+        # because when creating a restriction, the file is not created
+        # for writing and the contents of the global_boost_dict
+        # disappear.
         
         txt_clear(path, i)
         
@@ -63,7 +89,8 @@ def engine(path: Union[str, path_to_file]) -> None:
         txt_writer(path, EndPoints(1), global_down_dict)
 
 
-def txt_reader(path: Union[str, path_to_file], end_point: end_point_type) -> tuple[dict]:
+def txt_reader(path: Union[str, path_to_file],
+               end_point: end_point_type) -> tuple[dict]:
     max_value = end_point.struct
     word_dict = {}
     down_dict = {}
@@ -72,7 +99,8 @@ def txt_reader(path: Union[str, path_to_file], end_point: end_point_type) -> tup
     
     if os.path.exists(new_path):
         with open(new_path, 'r', encoding='utf-8') as read_line:
-            tmp_dict = {i:[j, int(n)] for i, j, n in [line.split('/') for line in read_line]}
+            tmp_dict = {i:[j, int(n)] for i, j, n \
+                in [line.split('/') for line in read_line]}
             
             for i in tmp_dict:
                 if tmp_dict[i][1] == 0:
@@ -97,19 +125,24 @@ def txt_reader(path: Union[str, path_to_file], end_point: end_point_type) -> tup
     else: 
         return {}, {}, {}
 
-def txt_writer(path: Union[str, path_to_file], end_point: end_point_type, inp_dict: dict) -> None:
+def txt_writer(path: Union[str, path_to_file],
+               end_point: end_point_type, inp_dict: dict) -> None:
     new_path = path + end_point.normal_view()
     with open(new_path, 'w', encoding='utf-8') as read_line:
         for item in inp_dict:
-            read_line.write(f'{item}/{inp_dict[item][0]}/{inp_dict[item][1]}\n')
+            read_line.write(f'{item}/{inp_dict[item][0]}/\
+                {inp_dict[item][1]}\n')
 
-def txt_clear(path: Union[str, path_to_file], end_point: end_point_type) -> None:
+def txt_clear(path: Union[str, path_to_file],
+              end_point: end_point_type) -> None:
     new_path = path + end_point.normal_view()
     
     with open(new_path, 'w') as write_line:
         write_line.write('')
 
-def overwriting(path: Union[str, path_to_file], end_point_1: end_point_type=EndPoints(0), end_point_2: end_point_type=EndPoints(1)) -> None:
+def overwriting(path: Union[str, path_to_file],
+                end_point_1: end_point_type=EndPoints(0),
+                end_point_2: end_point_type=EndPoints(1)) -> None:
     new_path_1 = path + end_point_1.normal_view()
     new_path_2 = path + end_point_2.normal_view()
     with open(new_path_1, 'r', encoding='utf-8') as read_line, \
@@ -123,23 +156,11 @@ def new_word_writer(path: Union[str, path_to_file], word: str) -> None:
     translation = input('Перевод: ')
     if translation != '':
         with open(new_path, 'a', encoding='utf-8') as write_line:
-            write_line.write(f'{word.capitalize()}/{translation.capitalize()}/1\n')
+            write_line.write(f'{word.capitalize()}/\
+                {translation.capitalize()}/1\n')
 
+def word_changer():
+    pass
 
-class EndPoints:
-    def __init__(self, struct: int, expansion='.txt'):
-        self.expansion = expansion
-        self.struct = struct
-        self = struct, expansion
-    def normal_view(self) -> str:
-        return str(self.struct) + self.expansion
-    def __eq__(self, other):
-        return self.struct == other.struct and self.expansion == other.expansion
-    
-def end_point_generator(limiter: int=12, start: int=1, degree: int=2) -> Generator:
-    for i in range(limiter):
-        yield EndPoints(start)
-        start *= degree
-            
 if __name__ == '__main__':
     main()
