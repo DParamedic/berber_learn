@@ -1,13 +1,11 @@
 import os
 from sys import platform
-from typing import TypeVar, Union, Generator, Optional, Self, Any
+from typing import Generator, Optional, Self, Any
 
 import win32con, win32api
 
 class EndPoints:
-    """Класс, которы нацелен на создание названий файлов.
-    Да, это избыточно, но ничего страшного.
-    """
+    """Класс, который нацелен на создание названий файлов."""
     def __init__(self, struct: int, expansion: str = '.txt'):
         self.expansion = expansion
         self.struct = struct
@@ -16,7 +14,6 @@ class EndPoints:
         return str(self.struct) + self.expansion
     
     def __eq__(self, other) -> bool:
-        """Создавалось для тестирования"""
         return self.struct == other.struct and self.expansion == other.expansion
 
     @classmethod
@@ -52,7 +49,7 @@ def directory_find(path: str) -> bool:
 def cmd_runner(path: str) -> None:
     """Запускает нечто вроде командной строки.
     Временный интерфейс."""
-    print("""Здрав будь! это berber learn v.0.1.
+    print("""berber learn v.0.1.1
 Список используемых команд:
     - change_word(c_w) -- Изменяет или удаляет слово. Сразу через
 пробел указывается изменяемое слово.
@@ -73,10 +70,11 @@ def cmd_runner(path: str) -> None:
         elif (cmd_status.split()[0] == 'change_word' or cmd_status.split()[0] == 'c_w'):
             try:
                 word_finder_ = word_finder(path, cmd_status.split()[1])
-                if next(word_finder_):
+                if word_finder_ is not None:
                     word_changer(*word_finder_)
             except IndexError:
-                print('Правильно так: c_w <изменяемое_слово>.')
+                print('Правильно испольлзовать так: c_w <изменяемое_слово>.')
+
         elif cmd_status == 'stop_work' or cmd_status == 's_w':
             break
         else:
@@ -84,7 +82,7 @@ def cmd_runner(path: str) -> None:
     overwriting(path, EndPoints(0), EndPoints(1))
 
 def engine(path: str) -> None:
-    """_summary_ Это сердце программы.
+    """Это сердце программы.
     Здесь происходит координация циркуляции значений между файлами 
     """
     global_down_dict: dict = {}
@@ -188,9 +186,7 @@ def new_word_writer(path: str, word: str) -> None:
     translation: str = input('Перевод: ')
     if translation != '':
         with open(new_path, 'a', encoding='utf-8') as write_line:
-            write_line.write(f'{word.capitalize()}/\
-{translation.capitalize()}/1\n')
-
+            write_line.write(f'{word.capitalize()}/{translation.capitalize()}/1\n')
 
 def word_changer(path: str, index: int, count: Optional[int] = None) -> None:
     """Функции изменения вынесены на особицу,
@@ -224,7 +220,8 @@ def word_changer(path: str, index: int, count: Optional[int] = None) -> None:
             
 def word_finder(path: str, word: str) -> Generator[Any, Any, None]:
     """Поиск слова по всем файлам.
-    Как само слово, так и перевод."""
+    Как само слово, так и перевод.
+    """
     word = word.capitalize()
     for i in EndPoints(0), *EndPoints.end_point_generator():
         new_path: str = path + i.normal_view()
@@ -232,7 +229,13 @@ def word_finder(path: str, word: str) -> Generator[Any, Any, None]:
         
         for line in spliting_file:
             if line[0] == word or line[1] == word:
-                yield from (True, new_path, spliting_file.index(line), int(line[2]))
+                yield from (
+                    new_path,
+                    spliting_file.index(line), 
+                    int(line[2]),
+                    )
+            else:
+                return
     else:
         print(f'{word} word not exist.')
 
