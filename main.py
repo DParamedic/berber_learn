@@ -136,7 +136,7 @@ def txt_reader(path: str, end_point: EndPoints) -> Generator[dict[str, list], di
 
         for i in tmp_dict:
             if tmp_dict[i][1] == 0:
-                input_translatte = input(f'Translate {i} is: ')
+                input_translatte = input(f'Translate {i} is: ').capitalize()
                 if input_translatte == tmp_dict[i][0]:
                     print('Прекрасно!')
                     tmp_dict[i][1] = max_value*2
