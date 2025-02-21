@@ -23,6 +23,92 @@ class EndPoints:
             yield cls(start)
             start *= degree
 
+class UseFile:
+    def __init__(self, path: str, end_point: EndPoints):
+        self.path = path
+        self.end_point = end_point
+        
+    def __str__(self):
+        return self.normal_view()
+
+    def normal_view(self):
+        return self.path + self.end_point.normal_view()
+    
+    
+    def txt_read_and_split(self) -> list[list[str]]:
+        """Превращает записи из файлов в списки значений."""
+        with open(self.normal_view(), 'r', encoding='utf-8') as read_line:
+            return [line.rstrip('\n').split('/') for line in  read_line.readlines()]
+
+    def txt_reader(self) -> Generator[dict[str, list], dict, None]:
+        """Из названия функции не очень ясно, но она так же важна,
+        как и engine. Здесь происходит чтение данных, 
+        сортровка, отправка в engine.
+        """
+        max_value: int = self.end_point.struct
+        word_dict: dict = {}
+        down_dict: dict = {}
+        boost_dict: dict = {}
+
+        if os.path.exists(self.normal_view()):
+            tmp_dict: dict[str, list] = {i:[j, int(n)] for i, j, n in self.txt_read_and_split()}
+
+            for i in tmp_dict:
+                if tmp_dict[i][1] == 0:
+                    input_translatte = input(f'Translate {i} is: ').capitalize()
+                    if input_translatte == tmp_dict[i][0]:
+                        print('Прекрасно!')
+                        tmp_dict[i][1] = max_value*2
+                    else:
+                        print(f'Нет. Правильно: {tmp_dict[i][0]}')
+                        tmp_dict[i][1] = None
+                else: tmp_dict[i][1] -= 1
+
+            for i in tmp_dict:
+                if tmp_dict[i][1] is None:
+                    down_dict[i] = [tmp_dict[i][0], 1]
+                elif tmp_dict[i][1] > max_value:
+                    boost_dict[i] = tmp_dict[i]
+                else:
+                    word_dict[i] = tmp_dict[i]
+
+            yield from (word_dict, down_dict, boost_dict)
+        else: 
+            yield from ({}, {}, {})
+
+    def txt_writer(self, inp_dict: dict) -> None:
+        """Запись в файл."""
+        with open(self.normal_view(), 'w', encoding='utf-8') as write_line:
+            for item in inp_dict:
+                write_line.write(f'{item}/{inp_dict[item][0]}/{inp_dict[item][1]}\n')
+
+    def txt_clear(self) -> None:
+        """Очистка файла."""
+        with open(self.normal_view(), 'w') as write_line:
+            write_line.write('')
+
+    def overwriting(self, other) -> None:
+        """Переписывание одного файла полностью в другой."""
+        with open(self.normal_view(), 'r', encoding='utf-8') as read_line, \
+                open(other.normal_view(), 'a', encoding='utf-8') as write_line:
+            write_line.write(read_line.read())
+        self.txt_clear()
+        
+    def new_word_writer(self, word: str) -> None: # В коде не передается нулевой список, но должен!
+        """"Функция записи новых ппар слов в словарь."""
+        translation: str = input('Перевод: ')
+        if translation != '':
+            with open(self.normal_view(), 'a', encoding='utf-8') as write_line:
+                write_line.write(f'{word.capitalize()}/{translation.capitalize()}/1\n')
+
+
+
+
+
+
+
+
+
 
 def main() -> None:
     f_end_point: str = "./.txt_lib/"
