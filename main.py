@@ -1,6 +1,6 @@
 import os
 from sys import platform
-from typing import Generator, Optional, Self, Any
+from typing import Generator, Optional, Self, Any, Iterable, Callable
 
 import win32con, win32api
 
@@ -25,40 +25,43 @@ class EndPoints:
 
 class UseFile:
     def __init__(self, end_point: EndPoints):
-        self._path = './.txt_lib/'
+        self._path: Optional[str] = None
         self.end_point = end_point
         
     def __str__(self):
-        return self.normal_view()
+        return self.normal_view
 
-    def normal_view(self):
-        return self.path + self.end_point.normal_view()
-    
-    @property.getter
-    def get_path(self):
+    @property
+    def path(self):
         return self._path
     
-    @property.setter
-    def set_path(self, new_path):
-        self._path = new_path
-        
+    @path.setter
+    def path(self, new_path: str = './.txt_lib/'):
+        if self._path is None:
+            self._path = new_path
+    
+    @property
+    def normal_view(self):
+        """Нормальный вид: строковое представление пути"""
+        return self._path + self.end_point.normal_view()
+    
+    # Методы обработки текста
     def txt_read_and_split(self) -> list[list[str]]:
         """Превращает записи из файлов в списки значений."""
-        with open(self.normal_view(), 'r', encoding='utf-8') as read_line:
+        with open(self.normal_view, 'r', encoding='utf-8') as read_line:
             return [line.rstrip('\n').split('/') for line in  read_line.readlines()]
 
     def txt_reader(self) -> Generator[dict[str, list], dict, None]:
-        """Из названия функции не очень ясно, но она так же важна,
-        как и engine. Здесь происходит чтение данных, 
-        сортровка, отправка в engine.
-        """
+        """Чтение файлов и распределение по словорям после опроса."""
         max_value: int = self.end_point.struct
         word_dict: dict = {}
         down_dict: dict = {}
         boost_dict: dict = {}
 
-        if os.path.exists(self.normal_view()):
-            tmp_dict: dict[str, list] = {i:[j, int(n)] for i, j, n in self.txt_read_and_split()}
+        if os.path.exists(self.normal_view):
+            tmp_dict: dict[str, list] = {
+                i: [j, int(n)] for i, j, n in self.txt_read_and_split()
+                }
 
             for i in tmp_dict:
                 if tmp_dict[i][1] == 0:
@@ -85,19 +88,19 @@ class UseFile:
 
     def txt_writer(self, inp_dict: dict) -> None:
         """Запись в файл."""
-        with open(self.normal_view(), 'w', encoding='utf-8') as write_line:
+        with open(self.normal_view, 'w', encoding='utf-8') as write_line:
             for item in inp_dict:
                 write_line.write(f'{item}/{inp_dict[item][0]}/{inp_dict[item][1]}\n')
 
     def txt_clear(self) -> None:
         """Очистка файла."""
-        with open(self.normal_view(), 'w') as write_line:
+        with open(self.normal_view, 'w') as write_line:
             write_line.write('')
 
     def overwriting(self, other) -> None:
         """Переписывание одного файла полностью в другой."""
-        with open(self.normal_view(), 'r', encoding='utf-8') as read_line, \
-                open(other.normal_view(), 'a', encoding='utf-8') as write_line:
+        with open(self.normal_view, 'r', encoding='utf-8') as read_line, \
+                open(other.normal_view, 'a', encoding='utf-8') as write_line:
             write_line.write(read_line.read())
         self.txt_clear()
         
@@ -105,64 +108,121 @@ class UseFile:
         """"Функция записи новых ппар слов в словарь."""
         translation: str = input('Перевод: ')
         if translation != '':
-            with open(self.normal_view(), 'a', encoding='utf-8') as write_line:
+            with open(self.normal_view, 'a', encoding='utf-8') as write_line:
                 write_line.write(f'{word.capitalize()}/{translation.capitalize()}/1\n')
-    
-    
-    
-    @staticmethod
-    def directory_find(_path) -> bool:
-        """Проверка, что это linux или windows.
-        И на присутствие скрытой директории,
-        если не найдена -- создание.
-        """
-        if not os.path.exists(_path):
-            os.mkdir(_path)
-            if platform == "win32":
-                win32api.SetFileAttributes(_path, win32con.FILE_ATTRIBUTE_HIDDEN)
-                return True
-            elif platform == "linux" or platform == "linux2":
-                return  True
-            else:
-                return False
-        else:
-            return True
+
+
+    # Секция поиска, изменения, удаления слова из словаря
+    def _word_finder_in_file(self, word: str) -> Optional[tuple[int, list[str]]]:
+        spliting_file = self.txt_read_and_split()
         
+        for line in spliting_file:
+            if line[0] == word or line[1] == word:
+                return (
+                    spliting_file.index(line), 
+                    line,
+                    )
+            else:
+                return None
+        else:
+            return None
+
     @classmethod
-    def word_finder(cls, path: str, word: str) -> Generator[Any, Any, None]:
+    def word_finder(cls, word: str) -> Optional[tuple[int, list[str]]]:
         """Поиск слова по всем файлам.
         Как само слово, так и перевод.
         """
         word = word.capitalize()
         for i in EndPoints(0), *EndPoints.end_point_generator():
-            yield cls(i)
-            new_path: str = path + i.normal_view()
-            spliting_file = txt_read_and_split(new_path)
-            
-            for line in spliting_file:
-                if line[0] == word or line[1] == word:
-                    yield from (
-                        new_path,
-                        spliting_file.index(line), 
-                        int(line[2]),
-                        )
-                else:
-                    return
+            finder_file = cls(i)._word_finder_in_file(word)
+            if finder_file is not None:
+                return finder_file
         else:
-            print(f'{word} word not exist.')
+            print(f'{word}: word not exist.')
+            return None
+
+    def word_deleter(self, index: int) -> None:
+        with open(self.normal_view, 'r', encoding='utf-8') as read_line:
+            readlines_for_index = read_line.readlines()
+            join_list = ''.join(readlines_for_index[:index]
+                            + readlines_for_index[index+1:])
+            
+            with open(self.normal_view, 'w', encoding='utf-8') as write_line:
+                write_line.write(join_list)
+
+    def word_changer(self, index: int, line: list[str]) -> None:
+        change_word = input('Измененное написание: ').capitalize()
+        change_translate = input('Измененный перевод: ').capitalize()
+        
+        if change_word != '' and change_translate != '':
+            if change_word == '':
+                change_word = line[0]
+            elif change_translate == '':
+                change_translate = line[1]
+                
+            change_str = f'{change_word}/{change_translate}/{line[-1]}\n'
+
+            with open(self.normal_view, 'r', encoding='utf-8') as read_line:
+                readlines_for_index = read_line.readlines()
+                join_list = ''.join(readlines_for_index[:index]
+                                + [change_str]
+                                + readlines_for_index[index+1:])
+                with open(self.normal_view, 'w', encoding='utf-8') as write_line:
+                    write_line.write(join_list)
 
 
+    @classmethod
+    def engine(cls) -> None:
+        """Это сердце программы.
+        Здесь происходит координация циркуляции значений между файлами.
+        """
+        global_down_dict: dict = {}
+        global_boost_dict: dict = {}
+        
+        for i in EndPoints.end_point_generator():
+            word_dict, down_dict, boost_dict = cls(i).txt_reader() # txt_reader(path, i)
+            
+            if not (word_dict or down_dict or boost_dict):
+                pass
+            # Здесь разумно бы добавить небольлшую оптимизацию,
+            # но я не понимаю, как бы это лучше сделать. При создании
+            # ограничения файл не создается и не происходит запись в
+            # global_boost_dict, содержимое его исчезает.
+
+            cls(i).txt_clear()
+
+            if i.struct != 1:
+                global_down_dict.update(down_dict)
+                word_dict.update(global_boost_dict)
+                cls(i).txt_writer(word_dict)
+
+                global_boost_dict.clear()
+                global_boost_dict.update(boost_dict)
+
+            else:
+                global_down_dict.update(down_dict)
+                global_down_dict.update(word_dict)
+                global_boost_dict.update(boost_dict)
+        else:
+            cls(EndPoints(1)).txt_writer(global_down_dict)
 
 
-
-
-
-
-
-def main() -> None:
-    f_end_point: str = "./.txt_lib/"
-    if directory_find(f_end_point):
-        cmd_runner(f_end_point)
+def directory_find(path: str) -> bool:
+    """Проверка, что это linux или windows.
+    И на присутствие скрытой директории,
+    если не найдена -- создание.
+    """
+    if not os.path.exists(path):
+        os.mkdir(path)
+        if platform == "win32":
+            win32api.SetFileAttributes(path, win32con.FILE_ATTRIBUTE_HIDDEN)
+            return True
+        elif platform == "linux" or platform == "linux2":
+            return  True
+        else:
+            return False
+    else:
+        return True
 
 def cmd_runner(path: str) -> None:
     """Запускает нечто вроде командной строки.
@@ -178,9 +238,22 @@ def cmd_runner(path: str) -> None:
 было внесено в строку первым, не перевод. И кстати.
 Счетчик сработывает при каждом запуске программы, поэтому советую
 запускать не слишком часто.""")
+    
+    cmd_dict: dict[str, Callable] = {
+        's_w': lambda: False,
+        'c_w': UseFile.word_changer,
+        'd_w': UseFile.word_deleter,
+        'c_p': UseFile.engine,
+    }
+
     count = 1
     while True:
         cmd_status = input('> ')
+        
+        try:
+            if not cmd_dict[cmd_status]:
+                break
+            pass
         if cmd_status == '':
             if count > 0:
                 engine(path)
@@ -199,91 +272,11 @@ def cmd_runner(path: str) -> None:
             new_word_writer(path, cmd_status)
     overwriting(path, EndPoints(0), EndPoints(1))
 
-def engine(path: str) -> None:
-    """Это сердце программы.
-    Здесь происходит координация циркуляции значений между файлами 
-    """
-    global_down_dict: dict = {}
-    global_boost_dict: dict = {}
-    
-    for i in EndPoints.end_point_generator():
-        word_dict, down_dict, boost_dict = txt_reader(path, i)
-        if not (word_dict or down_dict or boost_dict):
-            pass
-        # Здесь разумно бы добавить небольлшую оптимизацию,
-        # но я не понимаю, как бы это лучше сделать. При создании
-        # ограничения файл не создается и не происходит запись в
-        # global_boost_dict, содержимое его исчезает.
-
-        txt_clear(path, i)
-
-        if i.struct != 1:
-            global_down_dict.update(down_dict)
-            word_dict.update(global_boost_dict)
-            txt_writer(path, i, word_dict)
-
-            global_boost_dict.clear()
-            global_boost_dict.update(boost_dict)
-
-        else:
-            global_down_dict.update(down_dict)
-            global_down_dict.update(word_dict)
-            global_boost_dict.update(boost_dict)
-    else:
-        txt_writer(path, EndPoints(1), global_down_dict)
-
-
-def word_changer(path: str, index: int, count: Optional[int] = None) -> None:
-    """Функции изменения вынесены на особицу,
-    они не вызываются из engine.
-    Данная функция изменяет или удаляет значение из словаря."""
-    cmd_status: str = input('What you do with this word? [del/change] ')
-
-    if cmd_status == 'del' or cmd_status == 'd':
-        with open(path, 'r', encoding='utf-8') as read_line:
-            readlines_for_index = read_line.readlines()
-            join_list = ''.join(readlines_for_index[:index]
-                            + readlines_for_index[index+1:])
-            with open(path, 'w', encoding='utf-8') as write_line:
-                write_line.write(join_list)
-
-    elif cmd_status == 'change' or cmd_status == 'c':
-        c_word = input('Измененное написание: ').capitalize()
-        c_translate = input('Измененный перевод: ').capitalize()
-        if c_word != '' and c_translate != '':
-            change_str = f'{c_word}/{c_translate}/{count}\n'
-
-            with open(path, 'r', encoding='utf-8') as read_line:
-                readlines_for_index = read_line.readlines()
-                join_list = ''.join(readlines_for_index[:index]
-                                + [change_str]
-                                + readlines_for_index[index+1:])
-                with open(path, 'w', encoding='utf-8') as write_line:
-                    write_line.write(join_list)
-    else:
-        print(f'The flag {cmd_status} not exsist.')
-            
-def word_finder(path: str, word: str) -> Generator[Any, Any, None]:
-    """Поиск слова по всем файлам.
-    Как само слово, так и перевод.
-    """
-    word = word.capitalize()
-    for i in EndPoints(0), *EndPoints.end_point_generator():
-        new_path: str = path + i.normal_view()
-        spliting_file = txt_read_and_split(new_path)
-        
-        for line in spliting_file:
-            if line[0] == word or line[1] == word:
-                yield from (
-                    new_path,
-                    spliting_file.index(line), 
-                    int(line[2]),
-                    )
-            else:
-                return
-    else:
-        print(f'{word} word not exist.')
+def main() -> None:
+    f_end_point: str = "./.txt_lib/"
+    if directory_find(f_end_point):
+        cmd_runner(f_end_point)
 
 if __name__ == '__main__':
-    st = UseFile()
+    path = './.txt_lib/'
     main()
