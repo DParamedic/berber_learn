@@ -113,6 +113,10 @@ class UseFile:
 
 
     # Секция поиска, изменения, удаления слова из словаря
+    @staticmethod
+    def set_word():
+        return input('Введите слово для поиска:\n')
+    
     def _word_finder_in_file(self, word: str) -> Optional[tuple[int, list[str]]]:
         spliting_file = self.txt_read_and_split()
         
@@ -128,7 +132,7 @@ class UseFile:
             return None
 
     @classmethod
-    def word_finder(cls, word: str) -> Optional[tuple[int, list[str]]]:
+    def word_finder(cls, word: str) -> Generator[Any, Any, None]: # Optional[tuple[Self, int, list[str]]]:
         """Поиск слова по всем файлам.
         Как само слово, так и перевод.
         """
@@ -136,7 +140,7 @@ class UseFile:
         for i in EndPoints(0), *EndPoints.end_point_generator():
             finder_file = cls(i)._word_finder_in_file(word)
             if finder_file is not None:
-                return finder_file
+                yield from (cls(i), ) + finder_file
         else:
             print(f'{word}: word not exist.')
             return None
@@ -170,6 +174,14 @@ class UseFile:
                 with open(self.normal_view, 'w', encoding='utf-8') as write_line:
                     write_line.write(join_list)
 
+    def change_file(self, index: int, line: list[str]) -> None:
+        pass
+
+    @classmethod
+    def find_engine(cls, func: Callable, key: str):
+        word = UseFile.set_word()
+        generator_st = UseFile.word_finder(word)
+        generator_st.__next__().func(generator_st)
 
     @classmethod
     def engine(cls) -> None:
@@ -207,40 +219,47 @@ class UseFile:
             cls(EndPoints(1)).txt_writer(global_down_dict)
 
 
-def directory_find(path: str) -> bool:
-    """Проверка, что это linux или windows.
-    И на присутствие скрытой директории,
-    если не найдена -- создание.
-    """
-    if not os.path.exists(path):
-        os.mkdir(path)
-        if platform == "win32":
-            win32api.SetFileAttributes(path, win32con.FILE_ATTRIBUTE_HIDDEN)
-            return True
-        elif platform == "linux" or platform == "linux2":
-            return  True
-        else:
-            return False
-    else:
-        return True
-
-def cmd_runner(path: str) -> None:
-    """Запускает нечто вроде командной строки.
-    Временный интерфейс."""
-    print("""berber learn v.0.1.1
-Список используемых команд:
-    - change_word(c_w) -- Изменяет или удаляет слово. Сразу через
-пробел указывается изменяемое слово.
-    - stop_work(s_w) -- Останавливает работу программы. Важно
-останавливать программу именно так, иначе сохранятся не все данные!
-    Чтобы добавить новое слово просто напиши его в командную строку.
-Имей в виду, что при проверке первым выбирается именно слово, которое
-было внесено в строку первым, не перевод. И кстати.
-Счетчик сработывает при каждом запуске программы, поэтому советую
-запускать не слишком часто.""")
+    @staticmethod
+    def call_hub(path: Optional[str], call_type: Optional[Callable]):
+        if path is not None:
+            UseFile.path = path
+        if UseFile.directory_find():
+            pass
+            
     
-    cmd_dict: dict[str, Callable] = {
-        's_w': lambda: False,
+    @staticmethod
+    def directory_find(path: Callable = path) -> bool:
+        """Проверка, что это linux или windows.
+        И на присутствие скрытой директории,
+        если не найдена -- создание.
+        """
+        if not os.path.exists(path):
+            os.mkdir(path)
+            if platform == "win32":
+                win32api.SetFileAttributes(path, win32con.FILE_ATTRIBUTE_HIDDEN)
+                return True
+            elif platform == "linux" or platform == "linux2":
+                return  True
+            else:
+                return False
+        else:
+            return True
+
+
+def cmd_runner(path: Optional[str]) -> None:
+    """
+    Запускает нечто вроде командной строки.
+    Временный интерфейс."""
+    print("""berber learn v.t0.1.2
+Список используемых команд:
+- s_w: stop work;
+- c_w: change word;
+- d_w: delete word;
+- c_p: control point.
+""")
+    
+    cmd_dict: dict[str, Optional[Callable]] = {
+        's_w': None,
         'c_w': UseFile.word_changer,
         'd_w': UseFile.word_deleter,
         'c_p': UseFile.engine,
@@ -250,32 +269,33 @@ def cmd_runner(path: str) -> None:
     while True:
         cmd_status = input('> ')
         
-        try:
-            if not cmd_dict[cmd_status]:
+        if cmd_status in cmd_dict:
+            if cmd_status is None:
+                print('Завершение.')
                 break
-            pass
-        if cmd_status == '':
-            if count > 0:
-                engine(path)
-                count -= 1
-        elif (cmd_status.split()[0] == 'change_word' or cmd_status.split()[0] == 'c_w'):
-            try:
-                word_finder_ = word_finder(path, cmd_status.split()[1])
-                if word_finder_ is not None:
-                    word_changer(*word_finder_)
-            except IndexError:
-                print('Правильно испольлзовать так: c_w <изменяемое_слово>.')
+            else:
+                UseFile.call_hub(path, cmd_dict[cmd_status])
+                
+    #     if cmd_status == '':
+    #         if count > 0:
+    #             engine(path)
+    #             count -= 1
+    #     elif (cmd_status.split()[0] == 'change_word' or cmd_status.split()[0] == 'c_w'):
+    #         try:
+    #             word_finder_ = word_finder(path, cmd_status.split()[1])
+    #             if word_finder_ is not None:
+    #                 word_changer(*word_finder_)
+    #         except IndexError:
+    #             print('Правильно испольлзовать так: c_w <изменяемое_слово>.')
 
-        elif cmd_status == 'stop_work' or cmd_status == 's_w':
-            break
-        else:
-            new_word_writer(path, cmd_status)
-    overwriting(path, EndPoints(0), EndPoints(1))
+    #     elif cmd_status == 'stop_work' or cmd_status == 's_w':
+    #         break
+    #     else:
+    #         new_word_writer(path, cmd_status)
+    # overwriting(path, EndPoints(0), EndPoints(1))
 
-def main() -> None:
-    f_end_point: str = "./.txt_lib/"
-    if directory_find(f_end_point):
-        cmd_runner(f_end_point)
+def main(path: str = './.txt_lib/') -> None:
+    cmd_runner(path)
 
 if __name__ == '__main__':
     path = './.txt_lib/'
