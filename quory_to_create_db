@@ -1,0 +1,60 @@
+CREATE TABLE users
+(
+    id smallint unsigned auto_increment,
+    telegram_id smallint unsigned not null,
+
+    primary key (id)
+);
+
+CREATE TABLE dictionaries
+(
+    id smallint unsigned auto_increment,
+    user_id smallint unsigned,
+    language varchar(32) not null,
+
+    primary key (id)
+
+    constraint dict_user_fk
+    foreign key (user_id)
+    references users (id)
+    on delete cascade
+);
+
+CREATE TABLE pages
+(
+    id smallint unsigned auto_increment,
+    dict_id smallint unsigned,
+    page_name smallint unsigned not null,
+
+    primary key (id)
+
+    constraint page_dict_fk
+    foreign key (dict_id)
+    references dictionary (id)
+    on delete cascade
+);
+
+CREATE TABLE words
+(
+    id smallint unsigned auto_increment,
+    page_id smallint unsigned,
+    dict_id smallint unsigned,
+    word varchar(32) not null,
+    translate varchar(32) not null,
+    translate_2 varchar(32) null,
+    translate_3 varchar(32) null,
+    notes varchar(255) null,
+    count smallint unsigned not null,
+    add_date date not null,
+
+    primary key (id)
+
+    constraint word_page_fk
+    foreign key (page_id)
+    references page (id)
+
+    constraint word_dict
+    foreign key (dict_id)
+    references dictionary (id)
+    on delete cascade
+);
