@@ -1,17 +1,17 @@
 import datetime
 from typing import Optional, List
 
-from sqlalchemy import create_engine, SmallInteger, String, ForeignKey
+from sqlalchemy import SmallInteger, String, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.dialects.mysql import INTEGER, SMALLINT, DATE
+
+from sqlalchemy_engine import engine
 
 type SmallIntUnsigned = int
 type IntegerUnsigned = int
 type Varchar_31 = str
 type Varchar_255 = str
 type Date = datetime.datetime
-
-engine = create_engine('mysql+pymysql://local_admin:mylove@localhost:3306/berber_learn', echo=True)
 
 class Base(DeclarativeBase):
     type_annotation_map = {
