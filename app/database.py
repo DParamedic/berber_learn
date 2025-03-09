@@ -16,7 +16,7 @@ class Base(DeclarativeBase):
         IntegerUnsigned: INTEGER(unsigned=True),
         Varchar_31: String(31),
         Varchar_255: String(255),
-        Date: DATE
+        Date: DATE,
     }
     
 class Users(Base):

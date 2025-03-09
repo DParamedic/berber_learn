@@ -1,0 +1,5 @@
+python-telegram-bot==21.11.1
+sqlalchemy==2.0.38
+pywin32==308
+pydantic==2.10.6
+pydantic-settings==2.8.1
