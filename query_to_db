@@ -1,0 +1,7 @@
+select words.word, words.translate, words.translate_2, words.translate_3, words.notes 
+from words
+inner join pages
+on words.page_id == pages.id
+where pages.dict_id == 'st';
+
+
