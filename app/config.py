@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     @property
     def get_db_url(self) -> str:
         """Возвращает имя администратора."""
-        return f'mysql://{self.ADMIN_USER_NAME_FOR_DB}:{self.ADMIN_USER_PASSWORD_FOR_DB}@localhost:3306' # /berber_learn для запросов
+        return f'mysql+pymysql://{
+            self.ADMIN_USER_NAME_FOR_DB
+            }:{
+                self.ADMIN_USER_PASSWORD_FOR_DB
+                }@localhost:3306/berber_learn'
     
 settings = Settings()

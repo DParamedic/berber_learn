@@ -4,6 +4,6 @@ pywin32==308
 pydantic==2.10.6
 pydantic-settings==2.8.1
 starlette==0.46.1
-# PyMySQL==1.1.1
+PyMySQL==1.1.1
 cryptography==44.0.2
-MySQL-python==1.2.5
+mysql-connector-python==9.2.0
