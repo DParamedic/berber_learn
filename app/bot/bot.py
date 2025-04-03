@@ -1,145 +1,255 @@
-from dataclasses import dataclass
-import html
-from http import HTTPStatus
-import asyncio
-
-from telegram.ext import CallbackContext, ExtBot, ContextTypes, Application, CommandHandler, TypeHandler
 from telegram import Update
-from telegram.constants import ParseMode
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler
 
-import uvicorn
-from starlette.applications import Starlette
-from starlette.requests import Request
-from starlette.responses import PlainTextResponse, Response
-from starlette.routing import Route
+from pydantic import BaseModel
 
-from app.config import settings
+from db.database import Users, Words
+# from db.database_quory import insert_user
 
-print('exit')
-exit()
-# Шаблон класса
-@dataclass
-class WebhookUpdate:
-    """Simple dataclass to wrap a custom update type"""
+AFTER_START, INP_WORD, INP_TRANSLATE, ROAD_FORK, CHANGE_MOD, DEL_MOD = range(6)
+C_INP_SEARCH_VALUE, D_INP_SEARCH_VALUE = range(6, 8)
+C_INP_WORD, C_INP_TRANSLATE, C_INP_TRANSLATE_2, C_INP_TRANSLATE_3, C_INP_NOTES = range(8, 13)
+END = ConversationHandler.END
 
-    user_id: int
-    payload: str
-
-# Здесь мы создаем свой context 
-class CustomContext(CallbackContext[ExtBot, dict, dict, dict]):
-    """
-    Custom CallbackContext class that makes `user_data` available for updates of type
-    `WebhookUpdate`.
-    """
-
-    @classmethod
-    def from_update(
-        cls,
-        update: object,
-        application: "Application",
-    ) -> "CustomContext":
-        if isinstance(update, WebhookUpdate):
-            return cls(application=application, user_id=update.user_id)
-        return super().from_update(update, application)
-
-# Вызываем старт. 
-async def start(update: Update, context: CustomContext) -> None:
-    """Display a message with instructions on how to use this bot."""
-    # html.escape Заменяет html символы на нормальные ascii
-    payload_url = html.escape(f"{settings.URL_SERVER}/submitpayload?user_id=<your user id>&payload=<payload>")
-    text = (
-        f"To check if the bot is still running, call <code>{settings.URL_SERVER}/healthcheck</code>.\n\n"
-        f"To post a custom update, call <code>{payload_url}</code>."
-    )
-    # ставит в update message[reply_html]. reply_html типа обыычного reply_message
-    await update.message.reply_html(text=text)
-
-# Эта функция по-видимому находится на пороге телеграмм-приложения и сервера.
-# Все еще принимает на вход update, но теперь это WebhookUpdate
-# Вообще здесь происходит какой-то парсинг текстов
-async def webhook_update(update: WebhookUpdate, context: CustomContext) -> None:
-    """Handle custom updates."""
-    chat_member = await context.bot.get_chat_member(chat_id=update.user_id, user_id=update.user_id)
-    payloads = context.user_data.setdefault("payloads", [])
-    payloads.append(update.payload)
-    combined_payloads = "</code>\n• <code>".join(payloads)
-    text = (
-        f"The user {chat_member.user.mention_html()} has sent a new payload. "
-        f"So far they have sent the following payloads: \n\n• <code>{combined_payloads}</code>"
-    )
-    await context.bot.send_message(chat_id=settings.ADMIN_ID, text=text, parse_mode=ParseMode.HTML)
-
-
-async def main() -> None:
-    """Set up PTB application and a web application for handling the incoming requests."""
-    context_types = ContextTypes(context=CustomContext)
-
-    application = (
-        Application.builder().token(settings.BOT_TOKEN).updater(None).context_types(context_types).build()
-    )
-
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(TypeHandler(type=WebhookUpdate, callback=webhook_update))
-
-    # Pass webhook settings to telegram
-    await application.bot.set_webhook(url=f"{settings.URL_SERVER}/telegram", allowed_updates=Update.ALL_TYPES)
-
-    async def telegram(request: Request) -> Response:
-        """Handle incoming Telegram updates by putting them into the `update_queue`"""
-        await application.update_queue.put(
-            Update.de_json(data=await request.json(), bot=application.bot)
-        )
-        return Response()
+class InfoWord(BaseModel):
+    word: str
+    translate: str
+    translate_2: str | None
+    translate_3: str | None
+    notes: str | None
+    count: int = 0
+    page_name: int = 0
     
-    async def custom_updates(request: Request) -> PlainTextResponse:
-        """
-        Handle incoming webhook updates by also putting them into the `update_queue` if
-        the required parameters were passed correctly.
-        """
-        try:
-            user_id = int(request.query_params["user_id"])
-            payload = request.query_params["payload"]
-        except KeyError:
-            return PlainTextResponse(
-                status_code=HTTPStatus.BAD_REQUEST,
-                content="Please pass both `user_id` and `payload` as query parameters.",
-            )
-        except ValueError:
-            return PlainTextResponse(
-                status_code=HTTPStatus.BAD_REQUEST,
-                content="The `user_id` must be a string!",
-            )
-
-        await application.update_queue.put(WebhookUpdate(user_id=user_id, payload=payload))
-        return PlainTextResponse("Thank you for the submission! It's being forwarded.")
-
-    async def health(_: Request) -> PlainTextResponse:
-        """For the health endpoint, reply with a simple plain text message."""
-        return PlainTextResponse(content="The bot is still running fine :)")
-
-    starlette_app = Starlette(
-        routes=[
-            Route("/telegram", telegram, methods=["POST"]),
-            Route("/healthcheck", health, methods=["GET"]),
-            Route("/submitpayload", custom_updates, methods=["POST", "GET"]),
-        ]
+    def representation(self):
+        return f'{self.word} -- {self.translate}, ({self.translate_2}, {self.translate_3}).\nПояснения: {self.notes}'
+    
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text='Привет!'
     )
-    webserver = uvicorn.Server(
-        config=uvicorn.Config(
-            app=starlette_app,
-            port=8443,
-            use_colors=False,
-            host="20.103.221.187",
+    # insert_user(chat_id)
+    
+    return AFTER_START
+
+
+# after_start
+async def add_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Введите слово: ')
+    
+    return INP_WORD
+
+async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Здесь пока ничего нет, но вы ждите.')
+    
+    return AFTER_START
+
+async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Здесь пока ничего нет, но вы ждите.')
+    
+    return AFTER_START
+
+async def change_added_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Введите слово, которое планируете изменить.')
+    
+    return C_INP_SEARCH_VALUE
+
+async def delete_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Введите слово, которое планируете удалить.')
+    
+    return D_INP_SEARCH_VALUE
+
+
+# inp_word
+async def input_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_word = update.message.text
+    await update.message.reply_text(
+        f'Введено слово: {new_word}.\n'
+        'Введите перевод: '
+    )
+    
+    return INP_TRANSLATE
+
+# inp_translate
+async def input_translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    new_translate = update.message.text
+    await update.message.reply_text(
+        f'Введено слово: {new_translate}'
+    )
+    
+    return ROAD_FORK
+
+# read_fork
+async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Done.')
+    
+    return AFTER_START
+
+async def change(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f'{''}.\nДополняй или изменяй.')
+    
+    return CHANGE_MOD
+
+# change_mod
+async def change_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Введите новое слово: ')
+    
+    return C_INP_WORD
+
+async def change_translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Введите новый перевод: ')
+    
+    return C_INP_TRANSLATE
+
+async def change_translate_2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Введите новый дополнительный перевод: ')
+    
+    return C_INP_TRANSLATE_2
+
+async def change_translate_3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Введите новый дополнительный перевод: ')
+    
+    return C_INP_TRANSLATE_3
+
+async def change_notes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Введите новую заметку: ')
+    
+    return C_INP_NOTES
+# + confirm
+
+# c_inp_word
+async def c_input_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_word = update.message.text
+    await update.message.reply_text(
+        f'Введено слово: {new_word}.'
+    )
+    
+    return CHANGE_MOD
+
+# c_inp_translate
+async def c_input_translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_word = update.message.text
+    await update.message.reply_text(
+        f'Введен перевод: {new_word}.'
+    )
+    
+    return CHANGE_MOD
+
+# c_inp_translate_2
+async def c_input_translate_2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_word = update.message.text
+    await update.message.reply_text(
+        f'Введен дополниительный перевод: {new_word}.'
+    )
+    
+    return CHANGE_MOD
+
+# c_inp_translate_3
+async def c_input_translate_3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_word = update.message.text
+    await update.message.reply_text(
+        f'Введен дополнительный перевод: {new_word}.'
+    )
+    
+    return CHANGE_MOD
+
+# c_inp_notes
+async def c_input_notes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_word = update.message.text
+    await update.message.reply_text(
+        f'Введено примечание: {new_word}.'
+    )
+    
+    return CHANGE_MOD
+
+
+# c_inp_search_value
+async def c_input_search_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_word = update.message.text
+    await update.message.reply_text(
+        f'Идет поиск: {new_word}...'
+    )
+    
+    if True:
+        return CHANGE_MOD
+    else:
+        await update.message.reply_text(
+            f'Не найдено слово: {new_word}.'
         )
+        return C_INP_SEARCH_VALUE
+
+# d_inp_search_value
+async def d_input_search_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    new_word = update.message.text
+    await update.message.reply_text(
+        f'Идет поиск: {new_word}...'
+    )
+    
+    if False:
+        return DEL_MOD
+    else:
+        await update.message.reply_text(
+            f'Не найдено слово: {new_word}.'
+        )
+        return D_INP_SEARCH_VALUE
+
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('That`s all.')
+    
+    return END
+
+def ber_bot(token: str):
+    application = ApplicationBuilder().token(token).build() # token
+    
+    # def app_span(application):
+    #     print('Start')
+    #     yield
+    #     application.run_polling()
+
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            AFTER_START: [
+                CommandHandler('add_word', add_word),
+                CommandHandler('about', about),
+                CommandHandler('settings', settings),
+                CommandHandler('change_added_word', change_added_word),
+                CommandHandler('delete_word', delete_word),
+                ],
+            
+            INP_WORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, input_word)],
+            INP_TRANSLATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, input_translate)],
+            
+            ROAD_FORK: [
+                CommandHandler('confirm', confirm),
+                CommandHandler('change', change),
+                CommandHandler('add_more', change),
+                ],
+            
+            CHANGE_MOD: [
+                CommandHandler('change_word', change_word),
+                CommandHandler('change_translate', change_translate),
+                CommandHandler('change_translate_2', change_translate_2),
+                CommandHandler('change_translate_3', change_translate_3),
+                CommandHandler('change_notes', change_notes),
+                CommandHandler('confirm', confirm),
+            ],
+            
+            C_INP_WORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, c_input_word)],
+            C_INP_TRANSLATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, c_input_translate)],
+            C_INP_TRANSLATE_2: [MessageHandler(filters.TEXT & ~filters.COMMAND, c_input_translate_2)],
+            C_INP_TRANSLATE_3: [MessageHandler(filters.TEXT & ~filters.COMMAND, c_input_translate_3)],
+            C_INP_NOTES: [MessageHandler(filters.TEXT & ~filters.COMMAND, c_input_notes)],
+            
+            C_INP_SEARCH_VALUE: [MessageHandler(filters.TEXT & ~filters.COMMAND, c_input_search_value)],
+            D_INP_SEARCH_VALUE: [MessageHandler(filters.TEXT & ~filters.COMMAND, d_input_search_value)],
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
     )
 
-    # Run application and webserver together
-    async with application:
-        await application.start()
-        await webserver.serve()
-        await application.stop()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-
+    application.add_handler(conv_handler)
+    
+    application.run_polling()

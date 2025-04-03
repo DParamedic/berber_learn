@@ -1,0 +1,10 @@
+insert users(telegram_id)
+values (use_telegram_id);
+
+insert dictionaries(user_id, language_)
+values (use_user_id, input_language);
+
+insert pages(dict_id, page_name)
+values (use_dict_id, input_page_name);
+
+insert words()

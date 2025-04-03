@@ -1,6 +1,5 @@
-from db.database_engine import base_create
-import os
+from config import settings
+from bot.bot import ber_bot
 
 if __name__ == '__main__':
-    pass
-    base_create()
+    ber_bot(settings.BOT_TOKEN)

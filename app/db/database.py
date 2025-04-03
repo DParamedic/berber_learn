@@ -2,7 +2,7 @@ import datetime
 
 from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy.dialects.mysql import INTEGER, SMALLINT, DATE
+from sqlalchemy.dialects.mysql import INTEGER, SMALLINT, DATETIME
 
 type SmallIntUnsigned = int
 type IntegerUnsigned = int
@@ -16,7 +16,7 @@ class Base(DeclarativeBase):
         IntegerUnsigned: INTEGER(unsigned=True),
         Varchar_31: String(31),
         Varchar_255: String(255),
-        Date: DATE,
+        Date: DATETIME,
     }
     
 class Users(Base):
@@ -31,19 +31,12 @@ class Dictionaries(Base):
     id: Mapped[SmallIntUnsigned] = mapped_column(primary_key=True, autoincrement=True)
     user_id = mapped_column(ForeignKey('users.id', ondelete='cascade'))
     
-class Pages(Base):
-    __tablename__ = 'pages'
-    
-    id: Mapped[SmallIntUnsigned] = mapped_column(primary_key=True, autoincrement=True)
-    dict_id = mapped_column(ForeignKey('dictionaries.id', ondelete='cascade'))
-    page_name: Mapped[SmallIntUnsigned]
-    
 class Words(Base):
     __tablename__ = 'words'
     
     id: Mapped[SmallIntUnsigned] = mapped_column(primary_key=True, autoincrement=True)
     dict_id = mapped_column(ForeignKey('dictionaries.id', ondelete='cascade'))
-    page_id = mapped_column(ForeignKey('pages.id'))
+    page_name: Mapped[SmallIntUnsigned]
     word: Mapped[Varchar_31]
     translate: Mapped[Varchar_31]
     translate_2: Mapped[Varchar_31 | None]

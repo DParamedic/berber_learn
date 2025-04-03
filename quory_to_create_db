@@ -10,7 +10,7 @@ CREATE TABLE dictionaries
 (
     id smallint unsigned auto_increment,
     user_id smallint unsigned,
-    language varchar(32) not null,
+    language_ varchar(32) not null,
 
     primary key (id)
 

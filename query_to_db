@@ -1,7 +1,14 @@
+USER_ID = 123123
+
 select words.word, words.translate, words.translate_2, words.translate_3, words.notes 
 from words
-inner join pages
-on words.page_id == pages.id
-where pages.dict_id == 'st';
+where words.page_id == page_id;
 
+select dictionaries.user_id as user_id 
+from dictionaries
+where user_id == USER_ID;
+
+select pages.dict_id as dict_id 
+from pages
+where dict_id in user_id;
 
