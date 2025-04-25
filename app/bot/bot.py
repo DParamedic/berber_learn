@@ -3,7 +3,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 
 from pydantic import BaseModel
 
-from db.database import Users, Words
+from app.db.models import Users, Words
 # from db.database_quory import insert_user
 
 AFTER_START, INP_WORD, INP_TRANSLATE, ROAD_FORK, CHANGE_MOD, DEL_MOD = range(6)
