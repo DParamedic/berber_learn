@@ -11,7 +11,7 @@ class User(Base):
         name (varchar31): имя пользователя
         telegram_id (int8): telegram id
     """
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[varchar31 | None]
     telegram_id: Mapped[int8]
     
@@ -25,16 +25,19 @@ class Dictionary(Base):
         id (int): уникальный идентификатор словаря
         user_id (int): id пользователя
     """
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     language_id: Mapped[int]
     user_id = mapped_column(ForeignKey('users.id', ondelete='cascade'))
     
     users = relationship('User', back_populates='dictionary')
     words = relationship('Word', back_populates='dictionary')
+    languages = relationship('Language', back_populates='dictionary')
 
 class Language(Base):
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[varchar31]
+    
+    dictionaries = relationship('Dictionary', back_populates='language')
 
 class Word(Base):
     """
@@ -51,7 +54,7 @@ class Word(Base):
         page_value (int): продолжительность нахождения на 'странице'
         count (int): счетчик продолжительности нахождения на странице
     """
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
     dict_id = mapped_column(ForeignKey('dictionaries.id', ondelete='cascade'))
     name: Mapped[varchar31] = mapped_column(index=True)
     translate: Mapped[varchar31]
