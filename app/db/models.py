@@ -34,6 +34,14 @@ class Dictionary(Base):
     languages = relationship('Language', back_populates='dictionary')
 
 class Language(Base):
+    """
+    Модель для хранения списка используемых языков
+
+    Attributes:
+        id (int): уникальный идентификатор языка
+        name (str): название языка
+    """
+
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[varchar31]
     
