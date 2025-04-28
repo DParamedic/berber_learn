@@ -26,11 +26,16 @@ class Dictionary(Base):
         user_id (int): id пользователя
     """
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    language_id: Mapped[int]
     user_id = mapped_column(ForeignKey('users.id', ondelete='cascade'))
     
     users = relationship('User', back_populates='dictionary')
     words = relationship('Word', back_populates='dictionary')
-    
+
+class Language(Base):
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[varchar31]
+
 class Word(Base):
     """
     Модель для хранения слов
