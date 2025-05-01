@@ -110,5 +110,91 @@ class Repository:
             return True
         return False
     
-    async def create_language(self, ) -> Language:
-        pass
+    async def create_language(self, name) -> Language:
+        language = Language(
+            name=name,
+        )
+        self.session.add(language)
+        await self.session.commit()
+        await self.session.refresh(language)
+        return language
+    
+    async def get_language_by_id(self, language_id: int) -> Language | None:
+        result = await self.session.execute(
+            select(Language).where(
+                Language.id == language_id,
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def get_language_by_name(self, name: str) -> Language | None:
+        result = await self.session.execute(
+            select(Language).where(
+                Language.name == name,
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def update_language(self, language_id: int, **kwargs) -> Language:
+        language = await self.get_language_by_id(language_id)
+        if language:
+            for key, value in kwargs:
+                setattr(Language, key, value)
+            await self.session.commit()
+            await self.session.refresh(language)
+        return language
+
+    async def delete_language(self, language_id: int) -> bool:
+        language = await self.get_language_by_id(language_id)
+        if language:
+            await self.session.delete(language)
+            await self.session.commit()
+            return True
+        return False
+    
+    async def create_word(self, content: str, dict_id: int, page_value: int, count: int) -> Language:
+        word = Word(
+            content=content,
+            dict_id=dict_id,
+            page_value=page_value,
+            count=count,
+        )
+        self.session.add(word)
+        await self.session.commit()
+        await self.session.refresh(word)
+        return word
+    
+    async def get_word_by_id(self, word_id: int) -> Language | None:
+        result = await self.session.execute(
+            select(Word).where(
+                Word.id == word_id,
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def get_word_by_dict_id_and_content(self, dict_id: int, content: str) -> Language | None:
+        result = await self.session.execute(
+            select(Word).where(
+                Word,dict_id == dict_id,
+                Word.content == content,
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def update_word(self, word_id: int, **kwargs) -> Language:
+        word = await self.get_language_by_id(word_id)
+        if word:
+            for key, value in kwargs:
+                setattr(Word, key, value)
+            await self.session.commit()
+            await self.session.refresh(word)
+        return word
+
+    async def delete_word(self, word_id: int) -> bool:
+        word = await self.get_word_by_id(word_id)
+        if word:
+            await self.session.delete(word)
+            await self.session.commit()
+            return True
+        return False
+

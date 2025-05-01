@@ -63,19 +63,30 @@ class Word(Base):
         count (int): счетчик продолжительности нахождения на странице
     """
     id: Mapped[int] = mapped_column(primary_key=True)
+    content: Mapped[varchar31] = mapped_column(index=True)
     dict_id = mapped_column(ForeignKey('dictionaries.id', ondelete='cascade'))
-    name: Mapped[varchar31] = mapped_column(index=True)
-    translate: Mapped[varchar31]
-    translate_2: Mapped[varchar31 | None]
-    translate_3: Mapped[varchar31 | None]
-    notes: Mapped[varchar255 | None]
     page_value: Mapped[int]
     count: Mapped[int]
     
     dictionaries = relationship('Dictionary', back_populates='word')
+    translate = relationship('Translate', back_populates='word')
+    notes = relationship('Notes', back_populates='word')
     
     __table_args__ = (
-        UniqueConstraint('dict_id', 'word', name='word_name_dict_id_key'),
+        UniqueConstraint('dict_id', 'word', name='word_content_dict_id_key'),
     )
+
+class Translate(Base):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    content: Mapped[varchar31] = mapped_column(index=True)
+    word_id = mapped_column(ForeignKey('word.id', ondelete='cascade'))
+
+    words = relationship('Word', back_populates='translate')
+
+class Notes(Base):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    content: Mapped[varchar255]
+    word_id = mapped_column(ForeignKey('word.id', ondelete='cascade'))
     
-    
+    words = relationship('Word', back_populates='note')
+
