@@ -3,7 +3,7 @@ from functools import wraps
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import User, Dictionary, Word, Language
+from app.dictionary.models import Dictionary, Word, Language, Translate, Note
 from app.database import async_session_maker
 
 class Repository:
@@ -23,50 +23,6 @@ class Repository:
                     print(f'Error: {err}')
                     raise err
         return _wrapper
-    
-    
-    async def create_user(self, telegram_id: int, name: str | None) -> User:
-        user = User(
-            telegram_id=telegram_id,
-            name=name,
-        )
-        self.session.add(user)
-        await self.session.commit()
-        await self.session.refresh(user)
-        return user
-    
-    async def get_user_by_id(self, user_id: int) -> User | None:
-        result = await self.session.execute(
-            select(User).where(
-                User.id == user_id,
-            )
-        )
-        return result.scalar_one_or_none()
-    
-    async def get_user_by_telegram_id(self, telegram_id: int) -> User | None:
-        result = await self.session.execute(
-            select(User).where(
-                User.telegram_id == telegram_id,
-            )
-        )
-        return result.scalar_one_or_none()
-    
-    async def update_user(self, user_id: int, **kwargs) -> User | None:
-        user = await self.get_user_by_id(user_id)
-        if user:
-            for key, value in kwargs:
-                setattr(User, key, value)
-            await self.session.commit()
-            await self.session.refresh(user)
-        return user
-    
-    async def delete_user(self, user_id: int) -> bool:
-        user = self.get_user_by_id(user_id)
-        if user:
-            await self.session.delete(user)
-            await self.session.commit()
-            return True
-        return False
     
     async def create_dictionary(self, user_id: int) -> Dictionary:
         dictionary = Dictionary(
@@ -97,7 +53,7 @@ class Repository:
         dictionary = await self.get_user_by_id(dictionary_id)
         if dictionary:
             for key, value in kwargs:
-                setattr(Dictionary, key, value)
+                setattr(dictionary, key, value)
             await self.session.commit()
             await self.session.refresh(dictionary)
         return dictionary
@@ -139,7 +95,7 @@ class Repository:
         language = await self.get_language_by_id(language_id)
         if language:
             for key, value in kwargs:
-                setattr(Language, key, value)
+                setattr(language, key, value)
             await self.session.commit()
             await self.session.refresh(language)
         return language
@@ -171,7 +127,7 @@ class Repository:
             )
         )
         return result.scalar_one_or_none()
-    
+
     async def get_word_by_dict_id_and_content(self, dict_id: int, content: str) -> Language | None:
         result = await self.session.execute(
             select(Word).where(
@@ -185,7 +141,7 @@ class Repository:
         word = await self.get_language_by_id(word_id)
         if word:
             for key, value in kwargs:
-                setattr(Word, key, value)
+                setattr(word, key, value)
             await self.session.commit()
             await self.session.refresh(word)
         return word
@@ -198,3 +154,42 @@ class Repository:
             return True
         return False
 
+    async def create_translate(self, content: str) -> Translate:
+        translate = Translate(content=content)
+        self.session.add(translate)
+        await self.session.commit()
+        await self.session.refresh(translate)
+        return translate
+    
+    async def get_translate_by_id(self, translate_id: int) -> Translate | None:
+        result = await self.session.execute(
+            select(Translate).where(
+                Translate.id == translate_id,
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def get_translate_by_content(self, content: str) -> Translate | None:
+        result = await self.session.execute(
+            select(Translate).where(
+                Translate.content == content,
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def update_translate(self, translate_id: int, **kwargs) -> Translate | None:
+        translate = await self.get_translate_by_id(translate_id)
+        if translate:
+            for key, value in kwargs.items():
+                setattr(translate, key, value)
+            await self.session.refresh(translate)
+            return translate
+        return translate
+    
+    async def delete_translate(self, translate_id: int) -> bool:
+        translate = await self.get_translate_by_id(translate_id)
+        if translate:
+            await self.session.delete(translate)
+            return True
+        return False
+    
