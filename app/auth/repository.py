@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 
-class AuthTRpository:
+class AuthTRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
     
