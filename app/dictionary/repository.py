@@ -100,10 +100,9 @@ class DictionaryRepository:
             return True
         return False
 
-    async def create_word(self, content: str, translate_id: int, note_id: int, dict_id: int, page_value: int, count: int) -> Language:
+    async def create_word(self, content: str, note_id: int, dict_id: int, page_value: int, count: int) -> Language:
         word = Word(
             content=content,
-            translate_id=translate_id,
             note_id=note_id,
             dict_id=dict_id,
             page_value=page_value,
@@ -131,15 +130,6 @@ class DictionaryRepository:
         )
         return result.scalar_one_or_none()
 
-    # async def get_word_by_dict_id_and_translate_id(self, dict_id: int, content: str) -> Language | None:
-    #     result = await self.session.execute(
-    #         select(Word).where(
-    #             Word,dict_id == dict_id,
-    #             Word.content == content,
-    #         )
-    #     )
-    #     return result.scalar_one_or_none()
-
     async def update_word(self, word_id: int, **kwargs) -> Language:
         word = await self.get_language_by_id(word_id)
         if word:
@@ -157,8 +147,11 @@ class DictionaryRepository:
             return True
         return False
 
-    async def create_translate(self, content: str) -> Translate:
-        translate = Translate(content=content)
+    async def create_translate(self, content: str, word_id: int) -> Translate:
+        translate = Translate(
+            content=content,
+            word_id=word_id,
+            )
         self.session.add(translate)
         await self.session.commit()
         await self.session.refresh(translate)
@@ -172,9 +165,18 @@ class DictionaryRepository:
         )
         return result.scalar_one_or_none()
     
-    async def get_translate_by_content(self, content: str) -> Translate | None:
+    async def get_translates_by_word_id(self, word_id: int) -> list[Translate | None]:
         result = await self.session.execute(
             select(Translate).where(
+                Translate.word_id == word_id,
+            )
+        )
+        return result.scalars().all()
+
+    async def get_translate_by_word_id_and_content(self, word_id: int, content: str) -> Translate | None:
+        result = await self.session.execute(
+            select(Translate).where(
+                Translate.word_id == word_id,
                 Translate.content == content,
             )
         )

@@ -54,7 +54,6 @@ class Word(Base):
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     content: Mapped[varchar31]
-    translate_id = mapped_column(ForeignKey('translate.id', ondelete='restrict'))
     note_id: Mapped[int | None] = mapped_column(ForeignKey('note.id', ondelete='restrict'))
     dict_id = mapped_column(ForeignKey('dictionary.id', ondelete='cascade'))
     page_value: Mapped[int]
@@ -71,6 +70,7 @@ class Word(Base):
 
 class Translate(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
+    word_id: Mapped[int] = mapped_column(ForeignKey('word.id', ondelete='cascade'))
     content: Mapped[varchar31] = mapped_column(index=True)
 
     words: Mapped[Word] = relationship(back_populates='translate')
