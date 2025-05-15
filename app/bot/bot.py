@@ -3,9 +3,6 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 
 from pydantic import BaseModel
 
-from app.db.models import Users, Words
-# from db.database_quory import insert_user
-
 AFTER_START, INP_WORD, INP_TRANSLATE, ROAD_FORK, CHANGE_MOD, DEL_MOD = range(6)
 C_INP_SEARCH_VALUE, D_INP_SEARCH_VALUE = range(6, 8)
 C_INP_WORD, C_INP_TRANSLATE, C_INP_TRANSLATE_2, C_INP_TRANSLATE_3, C_INP_NOTES = range(8, 13)
@@ -73,7 +70,6 @@ async def input_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # inp_translate
 async def input_translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
     new_translate = update.message.text
     await update.message.reply_text(
         f'Введено слово: {new_translate}'
@@ -141,7 +137,7 @@ async def c_input_translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def c_input_translate_2(update: Update, context: ContextTypes.DEFAULT_TYPE):
     new_word = update.message.text
     await update.message.reply_text(
-        f'Введен дополниительный перевод: {new_word}.'
+        f'Введен дополнительный перевод: {new_word}.'
     )
     
     return CHANGE_MOD

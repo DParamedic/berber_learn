@@ -1,21 +1,24 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    ADMIN_USER_NAME_FOR_DB: str
-    ADMIN_USER_PASSWORD_FOR_DB: str
-    BOT_TOKEN: str
-    ADMIN_ID: int
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int
+    DB_PROVIDER: str = "postgresql+asyncpg"
+
+    TELEGRAM_BOT_TOKEN: str
+    TELEGRAM_ADMIN_ID: int
     URL_SERVER: str
     
     class Config:
         env_file = '.env'
         env_file_encoding = "utf-8"
-        validate_default = False # Изменить
         extra = 'ignore'
 
     @property
     def get_db_url(self) -> str:
-        """Возвращает имя администратора."""
-        return f'mysql+pymysql://{self.ADMIN_USER_NAME_FOR_DB}:{self.ADMIN_USER_PASSWORD_FOR_DB}@localhost:3306/berber_learn'
+        return f'{self.DB_PROVIDER}://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}'
     
 settings = Settings()

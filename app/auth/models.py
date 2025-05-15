@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.database import Base, int8, varchar31
+from app.database import int8, varchar31
 
 from app.settings.models import User_Settings
 from app.dictionary.models import Dictionary
 
-class User(Base):
+class User('Base'):
     """
     Модель для хранения информации о пользователях.
 

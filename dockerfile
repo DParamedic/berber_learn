@@ -8,6 +8,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
+    netcat-openbsd \
+    nano \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /backend
@@ -18,4 +20,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# entrypoint
+COPY entrypoint.sh /entrypoint.sh
+
+RUN sed -i 's/\r$//' /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]

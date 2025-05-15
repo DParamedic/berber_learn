@@ -1,11 +1,11 @@
 from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base, varchar255, varchar31
+from app.database import varchar255, varchar31
 from app.auth.models import User
 from app.settings.models import Page
 
-class Language(Base):
+class Language('Base'):
     """
     Модель для хранения списка используемых языков
 
@@ -19,7 +19,7 @@ class Language(Base):
     
     dictionaries: Mapped['Dictionary'] = relationship(back_populates='language', uselist=False)
 
-class Dictionary(Base):
+class Dictionary('Base'):
     """
     Модель для хранения словарей пользователя
 
@@ -40,25 +40,25 @@ class Dictionary(Base):
         UniqueConstraint('language_id', 'user_id', name='dictionary_user_id_language_id_key'),
     )
 
-class Word(Base):
+class Word('Base'):
     id: Mapped[int] = mapped_column(primary_key=True)
     content: Mapped[varchar31] = mapped_column(index=True)
     
     word_translations: Mapped['Word_Translate'] = relationship(back_populates='word')
     
-class Translate(Base):
+class Translate('Base'):
     id: Mapped[int] = mapped_column(primary_key=True)
     content: Mapped[varchar31] = mapped_column(index=True)
 
     word_translations: Mapped['Word_Translate'] = relationship(back_populates='translate')
 
-class Note(Base):
+class Note('Base'):
     id: Mapped[int] = mapped_column(primary_key=True)
     content: Mapped[varchar255]
 
     word_translations: Mapped['Word_Translate'] = relationship(back_populates='note')
     
-class Word_Translate(Base):
+class Word_Translate('Base'):
     word_id = mapped_column(ForeignKey('word.id', ondelete='cascade'))
     translate_id = mapped_column(ForeignKey('translate.id', ondelete='cascade'))
     note_id: Mapped[int | None] = mapped_column(ForeignKey('note.id', ondelete='restrict'))
