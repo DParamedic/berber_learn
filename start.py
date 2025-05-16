@@ -1,11 +1,5 @@
-from asyncio import run
-
-from app.main import start_base
-from app.database import Base
-from app.auth.models import User
-from app.dictionary.models import Dictionary, Language, Word, Translate, Note, Word_Translate
-from app.settings.models import Page, Book, Page_Book, User_Settings
+from app.bot.bot import ber_bot
+from app.config import settings
 
 if __name__ == '__main__':
-    run(start_base())
-    print(Base.metadata.tables)
+    ber_bot(settings.TELEGRAM_BOT_TOKEN)

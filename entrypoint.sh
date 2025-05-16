@@ -13,5 +13,14 @@ done
 
 echo "База данных доступна!"
 
-echo "Запуск Backend."
-exec python3 tmp.py
+if [ ! -d "alembic/versions" ]; then
+  echo "Создание папки миграций..."
+  mkdir -p alembic/versions
+  alembic revision --autogenerate -m "Initial revision"
+fi
+
+echo "Применение миграций..."
+alembic upgrade head
+
+echo "Запуск бота..."
+exec python3 start.py

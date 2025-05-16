@@ -16,6 +16,5 @@ venv/
 alembic/versions/
 
 test*
-test2*
-
+tasks*
 
