@@ -9,7 +9,7 @@ from alembic import context
 
 from app.database import Base
 from app.auth.models import User
-from app.dictionary.models import Dictionary, Language, Word, Translate, Note, Word_Translate
+from app.dictionary.models import Dictionary, Language, Word, Note, Word_Translate
 from app.settings.models import Page, Book, Page_Book, User_Settings
 from app.config import settings
 

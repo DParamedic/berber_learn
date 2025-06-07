@@ -8,14 +8,15 @@ class Page(Base):
     length: Mapped[int] = mapped_column(unique=True)
     
     page_books: Mapped['Page_Book'] = relationship(back_populates='page')
+    word_translates = relationship('Word_Translate', back_populates='page')
 
 class Book(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[varchar31] = mapped_column(unique=True)
-    
+
     page_books: Mapped['Page_Book'] = relationship(back_populates='book')
     users_settings: Mapped['User_Settings'] = relationship(back_populates='page')
-    
+
 class Page_Book(Base):
     book_id = mapped_column(ForeignKey('book.id', ondelete='cascade'))
     length_id = mapped_column(ForeignKey('page.id', ondelete='cascade'))
@@ -30,8 +31,8 @@ class User_Settings(Base):
     user_id = mapped_column(ForeignKey('user.id', ondelete='cascade'))
     book_id = mapped_column(ForeignKey('book.id', ondelete='cascade'))
 
-    books = relationship('User', back_populates='user_settings')
-    pages: Mapped['Book'] = relationship(back_populates='user_settings')
+    user = relationship('User', back_populates='user_settings', uselist=False)
+    book: Mapped['Book'] = relationship(back_populates='user_settings', uselist=False)
 
     __table_args__ = (
         PrimaryKeyConstraint('user_id', 'book_id', name='user_id_book_id_primary_key'),

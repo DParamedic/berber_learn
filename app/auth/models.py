@@ -15,4 +15,4 @@ class User(Base):
     telegram_id: Mapped[int8]
     
     dictionaries = relationship('Dictionary', back_populates='user')
-    users_settings = relationship('User_Settings', back_populates='user')
+    users_setting = relationship('User_Settings', back_populates='user', uselist=False)
