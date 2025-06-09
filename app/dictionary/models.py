@@ -21,7 +21,7 @@ class Dictionary(Base):
     word_translate: Mapped['Word_Translate'] = relationship(back_populates='dictionary')
 
     __table_args__ = (
-        UniqueConstraint('language_id', 'user_id', name='dictionary_user_id_language_id_key'),
+        UniqueConstraint('user_id', 'language_id', name='uq_user_id_language_id'),
     )
 
 class Language(Base):
@@ -47,7 +47,7 @@ class Word(Base):
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     content: Mapped[varchar31] = mapped_column(index=True)
-    
+
     word_association: Mapped[list['Word_Translate']] = relationship(back_populates='word')
     translations_association: Mapped[list['Word_Translate']] = relationship(back_populates='word')
     
@@ -75,22 +75,22 @@ class Word_Translate(Base):
         page_id (int): id длительности пребывания слова в таблице
         count (int): длительность пребывания по слова в page по факту
     """
+    dictionary_id = mapped_column(ForeignKey('dictionary.id', ondelete='cascade'))
     word_id = mapped_column(ForeignKey('word.id', ondelete='cascade'))
     translate_id = mapped_column(
         ForeignKey(
             'word.id', ondelete='cascade'
             ),CheckConstraint(
-                'second_word_id != word_id',
-                name='check_second_word_id_not_eq_word_id'
+                'translate_id != word_id',
+                name='check_translate_id_word_id'
                 )
             )
     note_id: Mapped[int | None] = mapped_column(
         ForeignKey('note.id', ondelete='restrict')
         )
-    dict_id = mapped_column(ForeignKey('dictionary.id', ondelete='cascade'))
-    page_id = mapped_column(ForeignKey('page.id'))
+    interval_id = mapped_column(ForeignKey('interval.id'))
     count: Mapped[int] = mapped_column(
-        CheckConstraint('count < page_value', name='check_count_less_page')
+        CheckConstraint('count < interval_id', name='check_count_interval_id')
         )
     
     dictionary: Mapped['Dictionary'] = relationship(
@@ -102,14 +102,14 @@ class Word_Translate(Base):
     note: Mapped['Note'] = relationship(
         back_populates='word_translate', uselist=False)
     page = relationship(
-        'Page', back_populates='word_translates', uselist=False)
+        'Interval', back_populates='word_translates', uselist=False)
 
     __table_args__ = (
         PrimaryKeyConstraint(
+            'dictionary_id',
             'word_id',
-            'dict_id',
             'translate_id',
-            name='word_id_dict_id_primary_key'
+            name='pk_dictionary_id_word_id_translate_id'
             ),
     )
 
