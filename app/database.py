@@ -47,13 +47,3 @@ class Base(DeclarativeBase):
             server_default=text("TIMEZONE('Asia/Tomsk', now())"),
             nullable=False,
         )
-
-    @declared_attr
-    def updated_at(cls) -> Mapped[datetime]:
-        """Время последнего обновления записи."""
-        return mapped_column(
-            DateTime,
-            server_default=text("TIMEZONE('Asia/Tomsk', now())"),
-            onupdate=text("TIMEZONE('Asia/Tomsk', now())"),
-            nullable=False,
-        )

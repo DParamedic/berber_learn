@@ -12,7 +12,7 @@ class User(Base):
     """
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[varchar31 | None]
-    telegram_id: Mapped[int8]
+    telegram_id: Mapped[int8] = mapped_column(unique=True)
     
     dictionaries = relationship('Dictionary', back_populates='user')
-    users_setting = relationship('User_Settings', back_populates='user', uselist=False)
+    user_settings = relationship('User_Settings', back_populates='user', uselist=False)

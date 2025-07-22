@@ -3,18 +3,23 @@ __pycache__/
 *.pyo
 *.pyd
 
-venv/
 .venv/
 .idea/
+.mypy_cache/
+.vscode/
+диаграммы/
+charts/
+data/
 
 *.log
 *.tmp
 *.swp
 *.git
 
-
 alembic/versions/
 
+.env
 test*
 tasks*
-
+run
+clear_docker

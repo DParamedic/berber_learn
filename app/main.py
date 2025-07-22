@@ -1,5 +1,5 @@
 from app.config import settings
-from app.bot.bot import ber_bot
+from app.bot.bot import berber_bot
 
 if __name__ == '__main__':
-    ber_bot(settings.BOT_TOKEN)
+    berber_bot(settings.BOT_TOKEN)
