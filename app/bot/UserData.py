@@ -1,36 +1,36 @@
-from functools import wraps
-
-from pydantic import BaseModel
-from pydantic_core import ValidationError
-
-from app.bot.DTO import Language, Dictionary, Word, Word_Translate
+from app.DTO import (
+    Extra_Dictionary,
+    Extra_Language,
+    Extra_Word,
+    Extra_Word_Translate,
+)
 
 class UserData:
     def __init__(self):
-        self._dictionary: Dictionary|None = None
-        self._word: Word|None = None
-        self._old_word: Word|None = None
-        self._note: Word|None = None
-        self._word_translate: Word_Translate|None = None
-        self._translates: list[Word]|None = None
+        self._dictionary: Extra_Dictionary|None = None
+        self._word: Extra_Word|None = None
+        self._old_word: Extra_Word|None = None
+        self._note: Extra_Word|None = None
+        self._word_translate: Extra_Word_Translate|None = None
+        self._translates: list[Extra_Word]|None = None
         self._dictionary_ids: list[int]|None = None
         self._interval_ids: list[int]|None = None
-        self._language: Language|None = None
+        self._language: Extra_Language|None = None
 
     @property
     def dictionary(self):
         return self._dictionary
     @dictionary.setter
-    def dictionary(self, other: Dictionary):
-        self._dictionary = Dictionary.model_construct(
+    def dictionary(self, other: Extra_Dictionary):
+        self._dictionary = Extra_Dictionary.model_construct(
             other.model_dump(other))
     @dictionary.deleter
     def dictionary(self):
         print("Этот объект не предназначен для удаления.")
 
     def set_dictionary(self, **kwargs):
-        if not isinstance(self._dictionary, Dictionary):
-            self._dictionary = Dictionary.model_construct()
+        if not isinstance(self._dictionary, Extra_Dictionary):
+            self._dictionary = Extra_Dictionary.model_construct()
         for attr, value in kwargs.items():
             setattr(self._dictionary, attr, value)
 
@@ -38,16 +38,16 @@ class UserData:
     def word(self):
         return self._word
     @word.setter
-    def word(self, other: Word):
-        self._word = Word.model_construct(
+    def word(self, other: Extra_Word):
+        self._word = Extra_Word.model_construct(
             **other.model_dump())
     @word.deleter
     def word(self):
         self._word = None
 
     def set_word(self, **kwargs):
-        if not isinstance(self._word, Word):
-            self._word = Word.model_construct()
+        if not isinstance(self._word, Extra_Word):
+            self._word = Extra_Word.model_construct()
         for attr, value in kwargs.items():
             setattr(self._word, attr, value)
 
@@ -55,16 +55,16 @@ class UserData:
     def old_word(self):
         return self._old_word
     @old_word.setter
-    def old_word(self, other: Word):
-        self._old_word = Word.model_construct(
+    def old_word(self, other: Extra_Word):
+        self._old_word = Extra_Word.model_construct(
             **other.model_dump())
     @old_word.deleter
     def old_word(self):
         self._old_word = None
 
     def set_old_word(self, **kwargs):
-        if not isinstance(self._old_word, Word):
-            self._old_word = Word.model_construct()
+        if not isinstance(self._old_word, Extra_Word):
+            self._old_word = Extra_Word.model_construct()
         for attr, value in kwargs.items():
             setattr(self._old_word, attr, value)
 
@@ -72,16 +72,16 @@ class UserData:
     def note(self):
         return self._note
     @note.setter
-    def note(self, other: Word):
-        self._note = Word.model_construct(
+    def note(self, other: Extra_Word):
+        self._note = Extra_Word.model_construct(
             **other.model_dump())
     @note.deleter
     def note(self):
         self._note = None
 
     def set_note(self, **kwargs):
-        if not isinstance(self._note, Word):
-            self._note = Word.model_construct()
+        if not isinstance(self._note, Extra_Word):
+            self._note = Extra_Word.model_construct()
         for attr, value in kwargs.items():
             setattr(self._note, attr, value)
 
@@ -89,16 +89,16 @@ class UserData:
     def word_translate(self):
         return self._word_translate
     @word_translate.setter
-    def word_translate(self, other: Word_Translate):
-        self._word_translate = Word_Translate.model_construct(
+    def word_translate(self, other: Extra_Word_Translate):
+        self._word_translate = Extra_Word_Translate.model_construct(
             **other.model_dump())
     @word_translate.deleter
     def word_translate(self):
         self._word_translate = None
 
     def set_word_translate(self, **kwargs):
-        if not isinstance(self._word_translate, Word_Translate):
-            self._word_translate = Word_Translate.model_construct()
+        if not isinstance(self._word_translate, Extra_Word_Translate):
+            self._word_translate = Extra_Word_Translate.model_construct()
         for attr, value in kwargs.items():
             setattr(self._word_translate, attr, value)
 
@@ -122,7 +122,7 @@ class UserData:
     def translates_ids(self, ids: list[int]):
         if not self._translates:
             self._translates = [
-                Word.model_construct(
+                Extra_Word.model_construct(
                     id=id,
                 ) for id in ids
             ]
@@ -141,7 +141,7 @@ class UserData:
     def translates_contents(self, contents: list[int]):
         if not self._translates:
             self._translates = [
-                Word.model_construct(
+                Extra_Word.model_construct(
                     content=content,
                 ) for content in contents
             ]
@@ -151,7 +151,7 @@ class UserData:
                 translate.content = contents[idx]
 
     @property
-    def valid_translates(self) -> list[Word]|list:
+    def valid_translates(self) -> list[Extra_Word]|list:
         translates = []
         if self._translates:
             for translate in self._translates:
@@ -188,16 +188,16 @@ class UserData:
     def language(self):
         return self._language
     @language.setter
-    def language(self, other: Language):
-        self._language = Language.model_construct(
+    def language(self, other: Extra_Language):
+        self._language = Extra_Language.model_construct(
             **other.model_dump())
     @language.deleter
     def language(self):
         self._language = None
 
     def set_language(self, **kwargs):
-        if not isinstance(self._language, Language):
-            self._language = Language.model_construct()
+        if not isinstance(self._language, Extra_Language):
+            self._language = Extra_Language.model_construct()
         for attr, value in kwargs.items():
             setattr(self._language, attr, value)
 

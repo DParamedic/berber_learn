@@ -8,9 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from app.database import Base
-from app.auth.models import User
-from app.dictionary.models import Dictionary, Language, Word, Note, Word_Translate
-from app.settings.models import Interval, Interval_List, Link_Interval_List, User_Settings
+from app.models import *
 from app.config import settings
 
 config = context.config

@@ -1,3 +1,5 @@
+import re
+
 from telegram.ext import ConversationHandler
 
 (
@@ -10,6 +12,10 @@ from telegram.ext import ConversationHandler
     SEL_DICT,
 ) = range(17)
 END = ConversationHandler.END
+
+def standard_view(word: str) -> str:
+    word = re.sub('ё', 'е', word.strip())
+    return word.capitalize()
 
 __all__ = [
     "LOOP",

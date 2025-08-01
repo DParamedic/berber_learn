@@ -1,7 +1,22 @@
 from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base, varchar255, varchar31
+from app.database import Base, varchar255, varchar31, int8
+
+class User(Base):
+    """
+    Модель для хранения информации о пользователях.
+
+    Attributes:
+        id (int | None): уникальный идентификатор пользователя
+        name (varchar31): имя пользователя
+        telegram_id (int8): telegram id
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[varchar31 | None]
+    telegram_id: Mapped[int8] = mapped_column(unique=True)
+    
+    dictionaries = relationship('Dictionary', back_populates='user')
 
 class Dictionary(Base):
     """Модель для хранения словарей пользователя.
@@ -112,4 +127,48 @@ class Word_Translate(Base):
             ),
     )
 
+class Interval(Base):
+    """Модель для хранения продолжительности интервалов.
 
+    Attributes:
+        id (int): Уникальный идентификатор интервала
+        length (int): Длительность интервала
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    length: Mapped[int] = mapped_column(unique=True)
+    
+    link_interval_lists: Mapped['Link_Interval_List'] = relationship(back_populates='interval')
+    word_translates = relationship('Word_Translate', back_populates='interval')
+
+class Interval_List(Base):
+    """Модель для хранения списков интервалов.
+    
+    Attributes:
+        id (int): Уникальный идентификатор списка
+        name (str): Наименование списка
+
+    Rules:
+        1. Базовый -- classic.
+        2. Если нет причин, то остальные -- m<n>, где n := 1,2...inf
+    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[varchar31] = mapped_column(unique=True)
+
+    link_interval_lists: Mapped['Link_Interval_List'] = relationship(back_populates='interval_list')
+
+class Link_Interval_List(Base):
+    """Модель для связи списков с их интервалами.
+
+    Attributes:
+        book_id (int): id списка
+        length_id (int): id интервала
+    """
+    interval_id = mapped_column(ForeignKey('interval.id', ondelete='cascade'))
+    interval_list_id = mapped_column(ForeignKey('interval_list.id', ondelete='cascade'))
+    
+    interval_list: Mapped['Interval_List'] = relationship(back_populates='link_interval_lists')
+    interval: Mapped['Interval'] = relationship(back_populates='link_interval_lists')
+    
+    __table_args__ = (
+        PrimaryKeyConstraint('interval_list_id', 'interval_id', name='pk_interval_list_id_interval_id'),
+    )
