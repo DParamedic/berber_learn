@@ -54,13 +54,16 @@ class DialogHandler:
         return INP_WORD
     # inp_word
     async def input_word(self, update, context: CustomContext):
-        word = re.sub('ё', 'е', update.message.text.strip().lower())
+        word = update.message.text.strip()
         if word:
-            context.user_data_.set_word(content=word.capitalize())
+            context.user_data_.set_word(content=word)
             await update.message.reply_text(
-                f"Введено слово: {context.user_data_.word.content}."
-            )
-        return SET_WORD_ATTR
+                f"Введено слово: {context.user_data_.word.content}.")
+            return SET_WORD_ATTR
+        else:
+            await update.message.reply_text(
+                "Неверный формат слова. Введите другое:")
+        return INP_WORD
     # set_word_attr
     async def set_new_translate(self, update, context: CustomContext):
         await update.message.reply_text(
@@ -69,17 +72,21 @@ class DialogHandler:
         return INP_TRANSLATE
     # inp_translate
     async def input_translate(self, update, context: CustomContext):
-        translates = re.sub('ё', 'е', update.message.text.strip().lower())
-        if translates:
-            context.user_data_.translates_contents = [
-                    translate.strip().capitalize()
+        translations = update.message.text.strip()
+        if translations:
+            context.user_data_.translations_contents = [
+                    translate.strip()
                     for translate
-                    in translates.split(',')
+                    in translations.split(',')
                 ]
             await update.message.reply_text(
-                f"Введены переводы: {context.user_data_.translates_contents}."
+                f"Введены переводы: {context.user_data_.translations_contents}."
             )
-        return SET_WORD_ATTR
+            return SET_WORD_ATTR
+        else:
+            await update.message.reply_text(
+                "Неверный формат перевода. Введите иначе:")
+            return INP_TRANSLATE
     # set_word_attr
     async def set_new_note(self, update, context: CustomContext):
         await update.message.reply_text("Введите примечание: ")
@@ -108,14 +115,14 @@ class DialogHandler:
             )
             del context.user_data_.note
             context.user_data_.set_word_translate(note_id=note.id)
-        translates = await Repository.get_or_create_translates(
-            context.user_data_.valid_translates)
+        translations = await Repository.get_or_create_translations(
+            context.user_data_.valid_translations)
         context.user_data_.set_word_translate(
             word_id=word.id,
-            translate_ids=[translate.id for translate in translates]
+            translate_ids=[translate.id for translate in translations]
         )
-        del context.user_data_.translates
-        write_status = await Repository.create_word_translates(
+        del context.user_data_.translations
+        write_status = await Repository.create_word_translations(
             context.user_data_.word_translate.validate())
         del context.user_data_.word_translate
         if write_status:
@@ -228,55 +235,62 @@ class DialogHandler:
         return INP_SEARCH_VALUE_CH
     # inp_search_value_ch
     async def input_search_value_ch(self, update, context: CustomContext):
-        searched_word = re.sub('ё', 'е', update.message.text.strip().lower())
-        searched_word = searched_word.capitalize()
-        await update.message.reply_text(
-            f"Поиск {searched_word} в базе данных...")
-        DTO = await Repository.get_word_translates_inf(
-                searched_word,
-                context.user_data_.dictionary.id,
-        )
-        if DTO:
+        searched_word = update.message.text.strip()
+        if searched_word:
             await update.message.reply_text(
-                "Найдена информация:\n"
-                f"  Слово: {searched_word}\n  Переводы: {DTO["translates"]}\n"
-                f"  Примечание: {DTO["note"] if DTO["note"] else ''}\n"
-                f"  Длительность: {DTO["interval"]}\n  Счетчик: {DTO["count"]}"
+                f"Поиск {searched_word} в базе данных...")
+            DTO = await Repository.get_word_translations_inf(
+                    searched_word,
+                    context.user_data_.dictionary.id,
             )
-            context.user_data_.set_old_word(content=searched_word)
-            context.user_data_.word = context.user_data_.old_word
-            context.user_data_.translates_contents = DTO["translates"]
-            if DTO["note"]:
-                context.user_data_.set_note(content=DTO["note"])
-            await update.message.reply_text(
-                "Вы в меню изменения атрибутов слова!\n"
-                "Доступные команды: \n"
-                "/reset_word\n"
-                "/reset_translate\n"
-                "/reset_notes\n"
-                "/confirm"
-            )
-            return RESET_WORD_ATTR
+            if DTO:
+                await update.message.reply_text(
+                    "Найдена информация:\n"
+                    f"  Слово: {searched_word}\n  Переводы: {DTO["translations"]}\n"
+                    f"  Примечание: {DTO["note"] if DTO["note"] else ''}\n"
+                    f"  Длительность: {DTO["interval"]}\n  Счетчик: {DTO["count"]}"
+                )
+                context.user_data_.set_old_word(content=searched_word)
+                context.user_data_.word = context.user_data_.old_word
+                context.user_data_.translations_contents = DTO["translations"]
+                if DTO["note"]:
+                    context.user_data_.set_note(content=DTO["note"])
+                await update.message.reply_text(
+                    "Вы в меню изменения атрибутов слова!\n"
+                    "Доступные команды: \n"
+                    "/reset_word\n"
+                    "/reset_translate\n"
+                    "/reset_notes\n"
+                    "/confirm"
+                )
+                return RESET_WORD_ATTR
+            else:
+                await update.message.reply_text(
+                    f"Не найдено слово {searched_word} в словаре.\n"
+                    "Введите другое:"
+                )
         else:
             await update.message.reply_text(
-                f"Не найдено слово {searched_word} в словаре.\n"
-                "Введите другое:"
-            )
-            return INP_SEARCH_VALUE_CH
+                "Неверный формат слова. Введите иначе:")
+        return INP_SEARCH_VALUE_CH
     # reset_word_attr
     async def reset_word(self, update, context: CustomContext):
         await update.message.reply_text("Введите исправленное слово: ")
         return INP_WORD_CH
     # inp_word_ch
     async def input_word_ch(self, update, context: CustomContext):
-        word = re.sub('ё', 'е', update.message.text.strip().lower())
+        word = update.message.text.strip()
         if word:
             del context.user_data_.word
-            context.user_data_.set_word(content=word.capitalize())
+            context.user_data_.set_word(content=word)
             await update.message.reply_text(
                 f"Введено слово: {context.user_data_.word.content}."
             )
-        return RESET_WORD_ATTR
+            return RESET_WORD_ATTR
+        else:
+            await update.message.reply_text(
+                "Неверный формат слова. Введите иначе:")
+            return INP_WORD_CH
     # reset_word_attr
     async def reset_translate(self, update, context: CustomContext):
         await update.message.reply_text(
@@ -286,18 +300,22 @@ class DialogHandler:
         return INP_TRANSLATE_CH
     # inp_translate_ch
     async def input_translate_ch(self, update, context: CustomContext):
-        translates = re.sub('ё', 'е', update.message.text.strip().lower())
-        if translates:
-            del context.user_data_.translates
-            context.user_data_.translates_contents = [
-                    translate.strip().capitalize()
+        translations = update.message.text.strip()
+        if translations:
+            del context.user_data_.translations
+            context.user_data_.translations_contents = [
+                    translate.strip()
                     for translate
-                    in translates.split(',')
+                    in translations.split(',')
                 ]
             await update.message.reply_text(
-                f"Введены переводы: {context.user_data_.translates_contents}."
+                f"Введены переводы: {context.user_data_.translations_contents}."
             )
-        return RESET_WORD_ATTR
+            return RESET_WORD_ATTR
+        else:
+            await update.message.reply_text(
+                "Неверный формат введенный переводов. Введите иначе:")
+            return INP_TRANSLATE_CH
     # reset_word_attr
     async def reset_note(self, update, context: CustomContext):
         await update.message.reply_text("Введите исправленное примечание: ")
@@ -313,8 +331,8 @@ class DialogHandler:
         return RESET_WORD_ATTR
     # reset_word_attr
     async def confirm_changed_word(self, update, context: CustomContext):
-        # Удаляем старые Word_Translates
-        await Repository.delete_word_translates(
+        # Удаляем старые Word_Translations
+        await Repository.delete_word_translations(
                 context.user_data_.dictionary.id,
                 context.user_data_.old_word.content,
         )
@@ -330,16 +348,16 @@ class DialogHandler:
                 context.user_data_.note.validate())
             del context.user_data_.note
             context.user_data_.set_word_translate(note_id=note.id)
-        translates = await Repository.get_or_create_translates(
-            context.user_data_.valid_translates)
+        translations = await Repository.get_or_create_translations(
+            context.user_data_.valid_translations)
         context.user_data_.set_word_translate(
             word_id=word.id,
-            translate_ids=[translate.id for translate in translates],
+            translate_ids=[translate.id for translate in translations],
                 interval_id=1,
                 count = 0,
         )
-        del context.user_data_.translates
-        await Repository.create_word_translates(
+        del context.user_data_.translations
+        await Repository.create_word_translations(
             context.user_data_.word_translate.validate())
         del context.user_data_.word_translate
         await update.message.reply_text("Записано успешно.")
@@ -353,35 +371,37 @@ class DialogHandler:
         return INP_SEARCH_VALUE_DEL
     # inp_search_value_del
     async def input_search_value_del(self, update, context: CustomContext):
-        searched_word = update.message.text
-        searched_word = re.sub('ё', 'е', searched_word.strip().lower())
-        searched_word = searched_word.capitalize()
-        await update.message.reply_text(
-            f"Поиск {searched_word} в базе данных...")
-        DTO = await Repository.get_word_translates_inf(
-                searched_word,
-                context.user_data_.dictionary.id,
-        )
-        if DTO:
-            context.user_data_.set_word(content=searched_word)
+        searched_word = update.message.text.strip()
+        if searched_word:
             await update.message.reply_text(
-                "Найдена информация:\n"
-                f"  Слово: {searched_word}\n  Переводы: {DTO["translates"]}\n"
-                f"  Примечание: {DTO["note"] if DTO["note"] else ''}\n"
-                f"  Длительность: {DTO["interval"]}\n"
-                f"  Счетчик: {DTO["count"]}\n"
-                "Подтвердить: /y\nНе удалять: /n"
+                f"Поиск {searched_word} в базе данных...")
+            DTO = await Repository.get_word_translations_inf(
+                    searched_word,
+                    context.user_data_.dictionary.id,
             )
-            return CONFIRM_DEL
+            if DTO:
+                context.user_data_.set_word(content=searched_word)
+                await update.message.reply_text(
+                    "Найдена информация:\n"
+                    f"  Слово: {searched_word}\n  Переводы: {DTO["translations"]}\n"
+                    f"  Примечание: {DTO["note"] if DTO["note"] else ''}\n"
+                    f"  Длительность: {DTO["interval"]}\n"
+                    f"  Счетчик: {DTO["count"]}\n"
+                    "Подтвердить: /y\nНе удалять: /n"
+                )
+                return CONFIRM_DEL
+            else:
+                await update.message.reply_text(
+                    f"Не найдено слово {searched_word} в словаре.")
         else:
             await update.message.reply_text(
-                f"Не найдено слово {searched_word} в словаре.")
-            return INP_SEARCH_VALUE_DEL
+                "Неверный формат слова. Введите иначе:")
+        return INP_SEARCH_VALUE_DEL
     # confirm_del
     async def confirm_del(self, update, context: CustomContext):
         await update.message.reply_text(
             f"Удаление {context.user_data_.word.content}...")
-        await Repository.delete_word_translates(
+        await Repository.delete_word_translations(
                 context.user_data_.dictionary.id,
                 context.user_data_.word.content,
         )

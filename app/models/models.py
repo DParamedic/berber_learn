@@ -116,7 +116,7 @@ class Word_Translate(Base):
         back_populates="translations_association"
         )
     note: Mapped["Note"] = relationship(back_populates="word_translate", uselist=False)
-    interval = relationship("Interval", back_populates="word_translates", uselist=False)
+    interval = relationship("Interval", back_populates="word_translations", uselist=False)
 
     __table_args__ = (
         PrimaryKeyConstraint(
@@ -138,7 +138,7 @@ class Interval(Base):
     length: Mapped[int] = mapped_column(unique=True)
     
     link_interval_lists: Mapped['Link_Interval_List'] = relationship(back_populates='interval')
-    word_translates = relationship('Word_Translate', back_populates='interval')
+    word_translations = relationship('Word_Translate', back_populates='interval')
 
 class Interval_List(Base):
     """Модель для хранения списков интервалов.

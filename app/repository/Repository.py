@@ -83,11 +83,11 @@ class Repository:
 
     @classmethod
     @Repo.connect
-    async def get_or_create_translates(
+    async def get_or_create_translations(
         cls,
         DTOs: list[Valid_Word],
     ) -> list[Word]:
-        return cls._get_or_create_translates
+        return cls._get_or_create_translations
 
     @classmethod
     @Repo.connect
@@ -99,30 +99,30 @@ class Repository:
 
     @classmethod
     @Repo.connect
-    async def create_word_translates(
+    async def create_word_translations(
         cls,
         DTO: Valid_Word_Translate,
     ) -> bool:
         """Возвращает True, если создана хоть одна запись"""
-        return cls._create_word_translates
+        return cls._create_word_translations
 
     @classmethod
     @Repo.connect
-    async def get_word_translates_inf(
+    async def get_word_translations_inf(
         cls,
         word_content: str,
         dictionary_id: int,
     ) -> dict[str, str|list[str]]:
-        return cls._get_word_translates_inf
+        return cls._get_word_translations_inf
 
     @classmethod
     @Repo.connect
-    async def delete_word_translates(
+    async def delete_word_translations(
         cls,
         dictionary_id: int,
         word_content: str,
     ) -> None:
-        return cls._delete_word_translates
+        return cls._delete_word_translations
 
     @classmethod
     @Repo.connect
@@ -348,14 +348,14 @@ class Repository:
             result = await self._create_word(DTO)
         return result
 
-    async def _get_or_create_translates(self, DTOs: list[Valid_Word]):
-        translates = []
+    async def _get_or_create_translations(self, DTOs: list[Valid_Word]):
+        translations = []
         for DTO in DTOs:
             translate = await self._get_word(**DTO.model_dump())
             if not translate:
                 translate = await self._create_word(DTO)
-            translates.append(translate)
-        return translates
+            translations.append(translate)
+        return translations
 
     async def _get_or_create_note(
         self,
@@ -366,11 +366,11 @@ class Repository:
             result = await self._create_note(DTO)
         return result
 
-    async def _create_word_translates(
+    async def _create_word_translations(
         self,
         DTO: Valid_Word_Translate
     ) -> bool:
-        translates = False
+        is_created = False
         for translate_id in DTO.translate_ids:
             DTO_dump = DTO.model_dump(exclude={"translate_ids"})
             DTO_dump.update({"translate_id": translate_id})
@@ -379,17 +379,18 @@ class Repository:
                 word_translate = Word_Translate(**DTO_dump)
                 self.session.add(word_translate)
                 await self.session.commit()
-                translates = True
-        return translates
+                is_created = True
+        return is_created
 
-    async def _get_word_translates_inf(
+    async def _get_word_translations_inf(
         self,
         word_content: str,
         dictionary_id: int,
     ) -> dict[str, list[str|int]|None]:
-        word_translates = await self.session.execute(
+        word_translations = await self.session.execute(
             select(Word_Translate).options(
-                selectinload(Word_Translate.interval)
+                selectinload(Word_Translate.interval),
+                selectinload(Word_Translate.translations),
             ).where(
                 Word_Translate.dictionary_id == dictionary_id,
                 Word_Translate.word_id == (
@@ -399,38 +400,29 @@ class Repository:
                 )
             )
         )
-        word_translates = word_translates.scalars().all()
-
-        if not word_translates:
+        word_translations = word_translations.scalars().all()
+        if not word_translations:
             return None
-        translates = await self.session.execute(
-            select(Word).where(
-                Word.id.in_(
-                    (w_t.translate_id for w_t in word_translates)
-                )
-            )
-        )
-        translates = translates.scalars().all()
         note = await self.session.execute(
             select(Note).where(
                 Note.id.in_(
-                    (w_t.note_id for w_t in word_translates)
+                    (w_t.note_id for w_t in word_translations)
                 )
             )
         )
         note = note.scalar_one_or_none()
         return dict(
-            translates=[translate.content for translate in translates],
+            translations=[w_t.translations.content for w_t in word_translations],
             note=note.content if note else None,
-            interval=[w_t.interval.length for w_t in word_translates],
-            count=[w_t.count for w_t in word_translates]
+            interval=[w_t.interval.length for w_t in word_translations],
+            count=[w_t.count for w_t in word_translations]
         )
-    async def _delete_word_translates(
+    async def _delete_word_translations(
         self,
         dictionary_id: int,
         word_content: str,
     ) -> None:
-        word_translates = await self.session.execute(
+        word_translations = await self.session.execute(
             select(Word_Translate).where(
                 Word_Translate.dictionary_id == dictionary_id,
                 Word_Translate.word_id.in_(
@@ -440,8 +432,8 @@ class Repository:
                 )
             )
         )
-        word_translates = word_translates.scalars().all()
-        for word_translate in word_translates:
+        word_translations = word_translations.scalars().all()
+        for word_translate in word_translations:
             await self.session.delete(word_translate)
         await self.session.commit()
         return None

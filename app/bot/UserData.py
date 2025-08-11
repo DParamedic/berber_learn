@@ -12,7 +12,7 @@ class UserData:
         self._old_word: Extra_Word|None = None
         self._note: Extra_Word|None = None
         self._word_translate: Extra_Word_Translate|None = None
-        self._translates: list[Extra_Word]|None = None
+        self._translations: list[Extra_Word]|None = None
         self._dictionary_ids: list[int]|None = None
         self._interval_ids: list[int]|None = None
         self._language: Extra_Language|None = None
@@ -103,60 +103,60 @@ class UserData:
             setattr(self._word_translate, attr, value)
 
     @property
-    def translates(self):
-        return self._translates
-    @translates.setter
-    def translates(self, _):
+    def translations(self):
+        return self._translations
+    @translations.setter
+    def translations(self, _):
         ...
-    @translates.deleter
-    def translates(self):
-        self._translates = None
+    @translations.deleter
+    def translations(self):
+        self._translations = None
 
     @property
-    def translates_ids(self) -> list[int]:
-        if self._translates:
-            return [translate.id for translate in self._translates]
+    def translations_ids(self) -> list[int]:
+        if self._translations:
+            return [translate.id for translate in self._translations]
         else:
             return None
-    @translates_ids.setter
-    def translates_ids(self, ids: list[int]):
-        if not self._translates:
-            self._translates = [
+    @translations_ids.setter
+    def translations_ids(self, ids: list[int]):
+        if not self._translations:
+            self._translations = [
                 Extra_Word.model_construct(
                     id=id,
                 ) for id in ids
             ]
         else:
-            assert len(ids) == len(self._translates), "Необходимы списки одинаковой длины!"
-            for idx, translate in enumerate(self._translates):
+            assert len(ids) == len(self._translations), "Необходимы списки одинаковой длины!"
+            for idx, translate in enumerate(self._translations):
                 translate.id = ids[idx]
     
     @property
-    def translates_contents(self) -> list[str]:
-        if self._translates:
-            return [translate.content for translate in self._translates]
+    def translations_contents(self) -> list[str]:
+        if self._translations:
+            return [translate.content for translate in self._translations]
         else:
             return None
-    @translates_contents.setter
-    def translates_contents(self, contents: list[int]):
-        if not self._translates:
-            self._translates = [
+    @translations_contents.setter
+    def translations_contents(self, contents: list[int]):
+        if not self._translations:
+            self._translations = [
                 Extra_Word.model_construct(
                     content=content,
                 ) for content in contents
             ]
         else:
-            assert len(contents) == len(self._translates), "Необходимы списки одинаковой длины!"
-            for idx, translate in enumerate(self._translates):
+            assert len(contents) == len(self._translations), "Необходимы списки одинаковой длины!"
+            for idx, translate in enumerate(self._translations):
                 translate.content = contents[idx]
 
     @property
-    def valid_translates(self) -> list[Extra_Word]|list:
-        translates = []
-        if self._translates:
-            for translate in self._translates:
-                translates.append(translate.validate())
-        return translates
+    def valid_translations(self) -> list[Extra_Word]|list:
+        translations = []
+        if self._translations:
+            for translate in self._translations:
+                translations.append(translate.validate())
+        return translations
         
     @property
     def dictionary_ids(self):
