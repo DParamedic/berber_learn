@@ -1,7 +1,8 @@
-alembic==1.15.2
+alembic==1.16.4
 asyncpg==0.30.0
-cryptography==44.0.2
-pydantic==2.10.6
-pydantic-settings==2.8.1
-python-telegram-bot==21.11.1
-sqlalchemy==2.0.38
+cryptography==45.0.6
+pydantic==2.11.7
+pydantic-settings==2.10.1
+python-telegram-bot==22.3
+python-telegram-bot[job-queue]==22.3
+sqlalchemy==2.0.43

@@ -1,4 +1,4 @@
-from app.bot.bot import berber_bot
+from app.bot import berber_bot
 from app.config import settings
 
 if __name__ == '__main__':

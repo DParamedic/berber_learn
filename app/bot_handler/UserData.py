@@ -1,21 +1,32 @@
+from typing import Iterator, Generator
+
+from app.models import Word_Translate
 from app.DTO import (
     Extra_Dictionary,
     Extra_Language,
     Extra_Word,
     Extra_Word_Translate,
+    TreePathANdContentView,
 )
 
 class UserData:
     def __init__(self):
         self._dictionary: Extra_Dictionary|None = None
-        self._word: Extra_Word|None = None
         self._old_word: Extra_Word|None = None
+        self._word: Extra_Word|None = None
+        self._translations: list[Extra_Word]|None = None
         self._note: Extra_Word|None = None
         self._word_translate: Extra_Word_Translate|None = None
-        self._translations: list[Extra_Word]|None = None
+        self._language: Extra_Language|None = None
         self._dictionary_ids: list[int]|None = None
         self._interval_ids: list[int]|None = None
-        self._language: Extra_Language|None = None
+        self._word_translations_order: Generator[TreePathANdContentView, None, None]|None = None
+        self._current_object: TreePathANdContentView|None = None
+        self._current_dictionary: str|None = None
+        self._current_word: str|None = None
+        self._choice_count: int|None = None
+        self._dialog_active: bool = False
+        self._done_event: bool = False
 
     @property
     def dictionary(self):
@@ -35,23 +46,6 @@ class UserData:
             setattr(self._dictionary, attr, value)
 
     @property
-    def word(self):
-        return self._word
-    @word.setter
-    def word(self, other: Extra_Word):
-        self._word = Extra_Word.model_construct(
-            **other.model_dump())
-    @word.deleter
-    def word(self):
-        self._word = None
-
-    def set_word(self, **kwargs):
-        if not isinstance(self._word, Extra_Word):
-            self._word = Extra_Word.model_construct()
-        for attr, value in kwargs.items():
-            setattr(self._word, attr, value)
-
-    @property
     def old_word(self):
         return self._old_word
     @old_word.setter
@@ -69,6 +63,23 @@ class UserData:
             setattr(self._old_word, attr, value)
 
     @property
+    def word(self):
+        return self._word
+    @word.setter
+    def word(self, other: Extra_Word):
+        self._word = Extra_Word.model_construct(
+            **other.model_dump())
+    @word.deleter
+    def word(self):
+        self._word = None
+
+    def set_word(self, **kwargs):
+        if not isinstance(self._word, Extra_Word):
+            self._word = Extra_Word.model_construct()
+        for attr, value in kwargs.items():
+            setattr(self._word, attr, value)
+
+    @property
     def note(self):
         return self._note
     @note.setter
@@ -84,23 +95,6 @@ class UserData:
             self._note = Extra_Word.model_construct()
         for attr, value in kwargs.items():
             setattr(self._note, attr, value)
-
-    @property
-    def word_translate(self):
-        return self._word_translate
-    @word_translate.setter
-    def word_translate(self, other: Extra_Word_Translate):
-        self._word_translate = Extra_Word_Translate.model_construct(
-            **other.model_dump())
-    @word_translate.deleter
-    def word_translate(self):
-        self._word_translate = None
-
-    def set_word_translate(self, **kwargs):
-        if not isinstance(self._word_translate, Extra_Word_Translate):
-            self._word_translate = Extra_Word_Translate.model_construct()
-        for attr, value in kwargs.items():
-            setattr(self._word_translate, attr, value)
 
     @property
     def translations(self):
@@ -157,33 +151,24 @@ class UserData:
             for translate in self._translations:
                 translations.append(translate.validate())
         return translations
-        
+
     @property
-    def dictionary_ids(self):
-        return self._dictionary_ids
-    @dictionary_ids.setter
-    def dictionary_ids(self, dictionary_ids: list[int]):
-        if not isinstance(self._dictionary_ids, list):
-            self._dictionary_ids = []
-        for id in dictionary_ids:
-            self._dictionary_ids.append(id)
-    @dictionary_ids.deleter
-    def dictionary_ids(self):
-        self._dictionary_ids = None
-    
-    @property
-    def interval_ids(self):
-        return self._interval_ids
-    @interval_ids.setter
-    def interval_ids(self, interval_ids: list[int]):
-        if not isinstance(self._interval_ids, list):
-            self._interval_ids = []
-        for id in interval_ids:
-            self._interval_ids.append(id)
-    @interval_ids.deleter
-    def interval_ids(self):
-        self._interval_ids = None
-    
+    def word_translate(self):
+        return self._word_translate
+    @word_translate.setter
+    def word_translate(self, other: Extra_Word_Translate):
+        self._word_translate = Extra_Word_Translate.model_construct(
+            **other.model_dump())
+    @word_translate.deleter
+    def word_translate(self):
+        self._word_translate = None
+
+    def set_word_translate(self, **kwargs):
+        if not isinstance(self._word_translate, Extra_Word_Translate):
+            self._word_translate = Extra_Word_Translate.model_construct()
+        for attr, value in kwargs.items():
+            setattr(self._word_translate, attr, value)
+
     @property
     def language(self):
         return self._language
@@ -203,3 +188,100 @@ class UserData:
 
     def clear(self):
         self.__init__()
+
+    @property
+    def dictionary_ids(self):
+        return self._dictionary_ids
+    @dictionary_ids.setter
+    def dictionary_ids(self, dictionary_ids: list[int]):
+        if not isinstance(self._dictionary_ids, list):
+            self._dictionary_ids = []
+        for id in dictionary_ids:
+            self._dictionary_ids.append(id)
+    @dictionary_ids.deleter
+    def dictionary_ids(self):
+        self._dictionary_ids = None
+
+    @property
+    def interval_ids(self):
+        return self._interval_ids
+    @interval_ids.setter
+    def interval_ids(self, interval_ids: list[int]):
+        if not isinstance(self._interval_ids, list):
+            self._interval_ids = []
+        for id in interval_ids:
+            self._interval_ids.append(id)
+    @interval_ids.deleter
+    def interval_ids(self):
+        self._interval_ids = None
+
+    @property
+    def word_translations_order(self) -> Generator[TreePathANdContentView, None, None]:
+        return self._word_translations_order
+    @word_translations_order.setter
+    def word_translations_order(self, generator: Generator):
+        if isinstance(generator, Iterator):
+            self._word_translations_order = generator
+    @word_translations_order.deleter
+    def word_translations_order(self):
+        self._word_translations_order = None
+
+    @property
+    def current_element(self) -> TreePathANdContentView|None:
+        if self._current_object:
+            return self._current_object
+        else:
+            try:
+                self._current_object = next(self._word_translations_order)
+                self._choice_count = len(self._current_object.translations)
+                return self._current_object
+            except StopIteration:
+                return None
+    @current_element.deleter
+    def current_element(self):
+        self._current_object = None
+
+    @property
+    def current_dictionary(self):
+        return self._current_dictionary
+    @current_dictionary.setter
+    def current_dictionary(self, current_dictionary: str):
+        self._current_dictionary = current_dictionary
+    @current_dictionary.deleter
+    def current_dictionary(self):
+        self._current_dictionary = None
+
+    @property
+    def current_word(self):
+        return self._current_word
+    @current_word.setter
+    def current_word(self, current_word: str):
+        self._current_word = current_word
+    @current_word.deleter
+    def current_word(self):
+        self._current_word = None
+
+    @property
+    def choice_count(self):
+        return self._choice_count
+    @choice_count.setter
+    def choice_count(self, choice_count: str):
+        self._choice_count = choice_count
+    @choice_count.deleter
+    def choice_count(self):
+        self._choice_count = None
+
+    @property
+    def dialog_active(self) -> bool:
+        return self._dialog_active
+    @dialog_active.setter
+    def dialog_active(self, dialog_active: bool):
+        self._dialog_active = dialog_active
+
+    @property
+    def done_event(self) -> bool:
+        return self._done_event
+    @done_event.setter
+    def done_event(self, done_event: bool):
+        self._done_event = done_event
+        

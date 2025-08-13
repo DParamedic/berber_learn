@@ -1,10 +1,8 @@
-from typing import AsyncGenerator
-
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload, aliased
 
-from app.repository.Repo import Repo
+from app.repository import Decorators as ds
 from app.models import *
 from app.DTO import (
     Valid_Dictionary,
@@ -21,190 +19,70 @@ class Repository:
     def __init__(self, session):
         self.session: AsyncSession = session
 
-    @classmethod
-    @Repo.connect
-    async def get_or_create_user(
-        cls,
-        DTO: Valid_User,
-    ) -> User:
-        return cls._get_or_create_user
-
-    @classmethod
-    @Repo.connect
-    async def create_dictionary(
-        cls,
-        DTO: Valid_Dictionary,
-    ) -> Dictionary:
-        return cls._create_dictionary
-
-    @classmethod
-    @Repo.connect
-    async def get_dictionary(
-        cls,
-        *,
-        id: int = None,
-        user_id: int = None,
-        language_id: int = None,
-        interval_list_id: int = None,
-    ) -> Dictionary|None:
-        return cls._get_dictionary
-
-    @classmethod
-    @Repo.connect
-    async def get_dictionaries(
-        cls,
-        user_id: int,
-    ) -> list[Dictionary]|list:
-        return cls._get_dictionaries
-
-    @classmethod
-    @Repo.connect
-    async def get_dict_info(
-        cls,
-        dictionaries: list[Dictionary],
-    ):
-        return cls._get_dict_info
-
-    @classmethod
-    @Repo.connect
-    async def get_or_create_language(
-        cls,
-        DTO: Valid_Language,
-    ) -> Language:
-        return cls._get_or_create_language
-
-    @classmethod
-    @Repo.connect
-    async def get_or_create_word(
-        cls,
-        DTO: Valid_Word,
-    ) -> Word:
-        return cls._get_or_create_word
-
-    @classmethod
-    @Repo.connect
-    async def get_or_create_translations(
-        cls,
-        DTOs: list[Valid_Word],
-    ) -> list[Word]:
-        return cls._get_or_create_translations
-
-    @classmethod
-    @Repo.connect
-    async def get_or_create_note(
-        cls,
-        DTO: Valid_Word,
-    ) -> Note:
-        return cls._get_or_create_note
-
-    @classmethod
-    @Repo.connect
-    async def create_word_translations(
-        cls,
-        DTO: Valid_Word_Translate,
-    ) -> bool:
-        """Возвращает True, если создана хоть одна запись"""
-        return cls._create_word_translations
-
-    @classmethod
-    @Repo.connect
-    async def get_word_translations_inf(
-        cls,
-        word_content: str,
-        dictionary_id: int,
-    ) -> dict[str, str|list[str]]:
-        return cls._get_word_translations_inf
-
-    @classmethod
-    @Repo.connect
-    async def delete_word_translations(
-        cls,
-        dictionary_id: int,
-        word_content: str,
-    ) -> None:
-        return cls._delete_word_translations
-
-    @classmethod
-    @Repo.connect
-    async def get_interval_lists_by_user(
-        cls,
-        user_id: int
-    ) -> list[Interval_List] | list:
-        return cls._get_interval_lists_by_user
-
-    @classmethod
-    @Repo.connect
-    async def get_classic_interval(
-        cls,
-        interval_list_name: str,
-        interval_lengths: list[int],
-    ) -> None:
-        return cls._get_classic_interval
-
-    @Repo.create_model(User)
+    @ds.create_model(User)
     async def _create_user(
         self,
         DTO: Valid_User,
     ) -> User:
         ...
     
-    @Repo.create_model(Dictionary)
+    @ds.create_model(Dictionary)
     async def _create_dictionary(
         self,
         DTO: Valid_Dictionary,
     ) -> Dictionary:
         ...
 
-    @Repo.create_model(Language)
+    @ds.create_model(Language)
     async def _create_language(
         self,
         DTO: Valid_Language,
     ) -> Language:
         ...
 
-    @Repo.create_model(Word)
+    @ds.create_model(Word)
     async def _create_word(
         self,
         DTO: Valid_Word,
     ) -> Word:
         ...
 
-    @Repo.create_model(Word_Translate)
+    @ds.create_model(Word_Translate)
     async def _create_word_translate(
         self,
         DTO: Valid_Word_Translate,
     ) -> Word_Translate:
         ...
 
-    @Repo.create_model(Note)
+    @ds.create_model(Note)
     async def _create_note(
         self,
         DTO: Valid_Word,
     ) -> Note:
         ...
 
-    @Repo.create_model(Interval)
+    @ds.create_model(Interval)
     async def _create_interval(
         self,
         DTO: Valid_Interval,
     ) -> Interval:
         ...
 
-    @Repo.create_model(Interval_List)
+    @ds.create_model(Interval_List)
     async def _create_interval_list(
         self,
         DTO: Valid_Interval_List,
     ) -> Interval_List:
         ...
 
-    @Repo.create_model(Link_Interval_List)
+    @ds.create_model(Link_Interval_List)
     async def _create_link_interval_list(
         self,
         DTO: Valid_Link_Interval_List,
     ) -> Link_Interval_List:
         ...
 
-    @Repo.get_model(User)
+    @ds.get_model(User)
     async def _get_user(
         self,
         *,
@@ -213,7 +91,7 @@ class Repository:
     ) -> User|None:
         ...
 
-    @Repo.get_model(Dictionary)
+    @ds.get_model(Dictionary)
     async def _get_dictionary(
         self,
         *,
@@ -224,7 +102,7 @@ class Repository:
     ) -> Dictionary|None:
         ...
 
-    @Repo.get_model(Language)
+    @ds.get_model(Language)
     async def _get_language(
         self,
         *,
@@ -234,7 +112,7 @@ class Repository:
     ) -> Language|None:
         ...
 
-    @Repo.get_model(Word)
+    @ds.get_model(Word)
     async def _get_word(
         self,
         *,
@@ -243,7 +121,7 @@ class Repository:
     ) -> Word|None:
         ...
 
-    @Repo.get_model(Note)
+    @ds.get_model(Note)
     async def _get_note(
         self,
         *,
@@ -252,11 +130,11 @@ class Repository:
     ) -> Note|None:
         ...
 
-    @Repo.get_model(Word_Translate)
+    @ds.get_model(Word_Translate)
     async def _get_word_translate(
         self,
         *,
-        dict_id: int = None,
+        dictionary_id: int = None,
         word_id: int = None,
         translate_id: int = None,
         note: int = None,
@@ -265,7 +143,7 @@ class Repository:
     ) -> Word_Translate|None:
         ...
 
-    @Repo.get_model(Interval)
+    @ds.get_model(Interval)
     async def _get_interval(
         self,
         *,
@@ -274,7 +152,7 @@ class Repository:
     ) -> Interval|None:
         ...
 
-    @Repo.get_model(Interval_List)
+    @ds.get_model(Interval_List)
     async def _get_interval_list(
         self,
         *,
@@ -283,7 +161,7 @@ class Repository:
     ) -> Interval_List|None:
         ...
 
-    @Repo.get_model(Link_Interval_List)
+    @ds.get_model(Link_Interval_List)
     async def _get_link_interval_list(
         self,
         *,
@@ -390,7 +268,7 @@ class Repository:
         word_translations = await self.session.execute(
             select(Word_Translate).options(
                 selectinload(Word_Translate.interval),
-                selectinload(Word_Translate.translations),
+                selectinload(Word_Translate.translate),
             ).where(
                 Word_Translate.dictionary_id == dictionary_id,
                 Word_Translate.word_id == (
@@ -412,11 +290,112 @@ class Repository:
         )
         note = note.scalar_one_or_none()
         return dict(
-            translations=[w_t.translations.content for w_t in word_translations],
+            translations=[w_t.translate.content for w_t in word_translations],
             note=note.content if note else None,
             interval=[w_t.interval.length for w_t in word_translations],
             count=[w_t.count for w_t in word_translations]
         )
+    async def _update_word_translations_count(
+        self,
+        user_id: int,
+    ) -> list[Word_Translate]|list:
+        word_translations_table = (await self.session.execute(
+            select(Word_Translate)
+            .options(
+                selectinload(Word_Translate.dictionary)
+                .selectinload(Dictionary.language),
+                selectinload(Word_Translate.word),
+                selectinload(Word_Translate.translate),
+                selectinload(Word_Translate.interval),
+            )
+            .join(Dictionary, Dictionary.id == Word_Translate.dictionary_id)
+            .join(User, User.id == Dictionary.user_id)
+            .where(User.id == user_id)
+            .order_by(Word_Translate.dictionary_id, Word_Translate.word_id)
+        )).scalars().all()
+
+        out_word_translations = []
+        for word_translate in word_translations_table:
+            if word_translate.count < word_translate.interval.length:
+                word_translate.count += 1
+            else:
+                out_word_translations.append(word_translate)
+        await self.session.commit()
+        return out_word_translations
+
+    async def _update_word_translate_interval_up(
+        self,
+        dictionary_id: int,
+        word_id: int,
+        translate_id: int,
+        interval_list_id: int,
+        count: int,
+    ) -> None:
+        word_translate = await self._get_word_translate(
+            dictionary_id=dictionary_id,
+            word_id=word_id,
+            translate_id=translate_id,
+        )
+        word_translate.interval_id = await self.session.scalar(
+            select(Interval.id).where(
+                Interval.length == (
+                    select(func.min(Interval.length))
+                    .join(
+                        Link_Interval_List,
+                        Link_Interval_List.interval_id == Interval.id,
+                    )
+                    .join(
+                        Interval_List,
+                        Interval_List.id == Link_Interval_List.interval_list_id,
+                    )
+                    .where(
+                        Interval_List.id == interval_list_id,
+                        Interval.length > count,
+                    )
+                    .scalar_subquery()
+                )
+            )
+        )
+        word_translate.count = 0
+        await self.session.commit()
+        await self.session.refresh(word_translate)
+        return None
+
+    async def _update_word_translate_interval_down(
+        self,
+        dictionary_id: int,
+        word_id: int,
+        translate_id: int,
+        interval_list_id: int,
+    ) -> None:
+        word_translate = await self._get_word_translate(
+            dictionary_id=dictionary_id,
+            word_id=word_id,
+            translate_id=translate_id,
+        )
+        word_translate.interval_id = await self.session.scalar(
+            select(Interval.id).where(
+                Interval.length == (
+                    select(func.min(Interval.length))
+                    .join(
+                        Link_Interval_List,
+                        Link_Interval_List.interval_id == Interval.id,
+                    )
+                    .join(
+                        Interval_List,
+                        Interval_List.id == Link_Interval_List.interval_list_id,
+                    )
+                    .where(
+                        Interval_List.id == interval_list_id
+                    )
+                    .scalar_subquery()
+                )
+            )
+        )
+        word_translate.count = 0
+        await self.session.commit()
+        return None
+
     async def _delete_word_translations(
         self,
         dictionary_id: int,

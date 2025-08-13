@@ -64,14 +64,14 @@ class Word(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     content: Mapped[varchar31] = mapped_column(index=True)
 
-    word_association: Mapped[list["Word_Translate"]] = relationship(
-        foreign_keys="[Word_Translate.word_id]",
-        back_populates="words",
-        )
-    translations_association: Mapped[list["Word_Translate"]] = relationship(
-        foreign_keys="[Word_Translate.translate_id]",
-        back_populates="translations",
-        )
+    word_assoc: Mapped["Word_Translate"] = relationship(
+        back_populates="word",
+        foreign_keys="Word_Translate.word_id",
+    )
+    translate_assoc: Mapped["Word_Translate"] = relationship(
+        back_populates="translate",
+        foreign_keys='Word_Translate.translate_id'
+    )
     
 class Note(Base):
     """Модель для хранения заметок.
@@ -107,14 +107,8 @@ class Word_Translate(Base):
     count: Mapped[int]
     
     dictionary: Mapped["Dictionary"] = relationship(back_populates="word_translate", uselist=False)
-    words: Mapped[list["Word"]] = relationship(
-        foreign_keys=[word_id],
-        back_populates="word_association",
-        )
-    translations: Mapped[list["Word"]] = relationship(
-        foreign_keys=[translate_id],
-        back_populates="translations_association"
-        )
+    word: Mapped["Word"] = relationship(foreign_keys=word_id, back_populates="word_assoc", uselist=False)
+    translate: Mapped["Word"] = relationship(foreign_keys=translate_id, back_populates="translate_assoc", uselist=False)
     note: Mapped["Note"] = relationship(back_populates="word_translate", uselist=False)
     interval = relationship("Interval", back_populates="word_translations", uselist=False)
 

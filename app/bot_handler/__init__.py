@@ -1,5 +1,3 @@
-import re
-
 from telegram.ext import ConversationHandler
 
 (
@@ -10,12 +8,9 @@ from telegram.ext import ConversationHandler
     RESET_WORD_ATTR, INP_WORD_CH, INP_TRANSLATE_CH, INP_NOTE_CH,
     INP_SEARCH_VALUE_DEL, CONFIRM_DEL,
     SEL_DICT,
-) = range(17)
+    MESSAGE_TRANSLATE,
+) = range(18)
 END = ConversationHandler.END
-
-def standard_view(word: str) -> str:
-    word = re.sub('ё', 'е', word.strip())
-    return word.capitalize()
 
 __all__ = [
     "LOOP",
@@ -25,5 +20,6 @@ __all__ = [
     "RESET_WORD_ATTR", "INP_WORD_CH", "INP_TRANSLATE_CH", "INP_NOTE_CH",
     "INP_SEARCH_VALUE_DEL", "CONFIRM_DEL",
     "SEL_DICT",
+    "MESSAGE_TRANSLATE",
     "END",
 ]
