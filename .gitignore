@@ -1,0 +1,5 @@
+.env
+alembic/versions/
+.$*
+run
+clear_docker
