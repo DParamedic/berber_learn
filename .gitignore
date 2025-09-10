@@ -1,5 +1,4 @@
 .env
 alembic/versions/
 .$*
-run
-clear_docker
+docker_log.txt

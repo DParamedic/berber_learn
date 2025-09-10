@@ -15,11 +15,14 @@ data/
 *.tmp
 *.swp
 *.git
+*.md
 
 alembic/versions/
 
-.env
-test*
-tasks*
+test.*
+tasks.*
 run
+rerun
 clear_docker
+docker_log.txt
+.env_scheme

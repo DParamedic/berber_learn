@@ -1,4 +1,4 @@
-from typing import Any, Generator
+from typing import Generator
 from app.models import Word_Translate
 from collections import namedtuple
 
@@ -11,6 +11,7 @@ from app.DTO.validDTO import (
     Valid_Interval,
     Valid_Interval_List,
     Valid_Link_Interval_List,
+    Valid_User_Settings,
 )
 from app.DTO.extraDTO import (
     Extra_Dictionary,

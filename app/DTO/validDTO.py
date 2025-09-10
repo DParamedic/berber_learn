@@ -73,3 +73,9 @@ class Valid_Link_Interval_List(BaseModel):
     interval_list_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+class Valid_User_Settings(BaseModel):
+    user_id: int
+    interval_list_id: int
+
+    model_config = ConfigDict(from_attributes=True)

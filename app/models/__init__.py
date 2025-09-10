@@ -8,6 +8,7 @@ from app.models.models import (
     Interval,
     Interval_List,
     Link_Interval_List,
+    User_Settings,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "Interval",
     "Interval_List",
     "Link_Interval_List",
+    "User_Settings",
 ]

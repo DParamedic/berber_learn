@@ -1,7 +1,7 @@
-from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint
+from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base, varchar255, varchar31, int8
+from app.database import Base, varchar255, int8
 
 class User(Base):
     """
@@ -9,14 +9,14 @@ class User(Base):
 
     Attributes:
         id (int | None): уникальный идентификатор пользователя
-        name (varchar31): имя пользователя
+        name (varchar255): имя пользователя
         telegram_id (int8): telegram id
     """
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[varchar31 | None]
+    name: Mapped[varchar255 | None]
     telegram_id: Mapped[int8] = mapped_column(unique=True)
     
-    dictionaries = relationship('Dictionary', back_populates='user')
+    dictionaries = relationship("Dictionary", back_populates="user")
 
 class Dictionary(Base):
     """Модель для хранения словарей пользователя.
@@ -49,8 +49,8 @@ class Language(Base):
         translation_language (str): название языка переводов
     """
     id: Mapped[int] = mapped_column(primary_key=True)
-    main_language: Mapped[varchar31]
-    translation_language: Mapped[varchar31]
+    main_language: Mapped[varchar255]
+    translation_language: Mapped[varchar255]
     
     dictionaries: Mapped["Dictionary"] = relationship(back_populates="language", uselist=False)
 
@@ -62,7 +62,7 @@ class Word(Base):
         content (str): содержимое слова
     """
     id: Mapped[int] = mapped_column(primary_key=True)
-    content: Mapped[varchar31] = mapped_column(index=True)
+    content: Mapped[varchar255] = mapped_column(index=True)
 
     word_assoc: Mapped["Word_Translate"] = relationship(
         back_populates="word",
@@ -70,7 +70,7 @@ class Word(Base):
     )
     translate_assoc: Mapped["Word_Translate"] = relationship(
         back_populates="translate",
-        foreign_keys='Word_Translate.translate_id'
+        foreign_keys="Word_Translate.translate_id"
     )
     
 class Note(Base):
@@ -131,8 +131,8 @@ class Interval(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     length: Mapped[int] = mapped_column(unique=True)
     
-    link_interval_lists: Mapped['Link_Interval_List'] = relationship(back_populates='interval')
-    word_translations = relationship('Word_Translate', back_populates='interval')
+    link_interval_lists: Mapped["Link_Interval_List"] = relationship(back_populates="interval")
+    word_translations = relationship("Word_Translate", back_populates="interval")
 
 class Interval_List(Base):
     """Модель для хранения списков интервалов.
@@ -146,9 +146,9 @@ class Interval_List(Base):
         2. Если нет причин, то остальные -- m<n>, где n := 1,2...inf
     """
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[varchar31] = mapped_column(unique=True)
+    name: Mapped[varchar255] = mapped_column(unique=True)
 
-    link_interval_lists: Mapped['Link_Interval_List'] = relationship(back_populates='interval_list')
+    link_interval_lists: Mapped["Link_Interval_List"] = relationship(back_populates="interval_list")
 
 class Link_Interval_List(Base):
     """Модель для связи списков с их интервалами.
@@ -157,12 +157,22 @@ class Link_Interval_List(Base):
         book_id (int): id списка
         length_id (int): id интервала
     """
-    interval_id = mapped_column(ForeignKey('interval.id', ondelete='cascade'))
-    interval_list_id = mapped_column(ForeignKey('interval_list.id', ondelete='cascade'))
+    interval_id = mapped_column(ForeignKey("interval.id", ondelete="cascade"))
+    interval_list_id = mapped_column(ForeignKey("interval_list.id", ondelete="cascade"))
     
-    interval_list: Mapped['Interval_List'] = relationship(back_populates='link_interval_lists')
-    interval: Mapped['Interval'] = relationship(back_populates='link_interval_lists')
+    interval_list: Mapped["Interval_List"] = relationship(back_populates="link_interval_lists")
+    interval: Mapped["Interval"] = relationship(back_populates="link_interval_lists")
     
     __table_args__ = (
-        PrimaryKeyConstraint('interval_list_id', 'interval_id', name='pk_interval_list_id_interval_id'),
+        PrimaryKeyConstraint("interval_list_id", "interval_id", name="pk_interval_list_id_interval_id"),
+    )
+
+class User_Settings(Base):
+    user_id: Mapped[int]
+    interval_list_id: Mapped[int]
+    
+    __table_args__ = (
+        PrimaryKeyConstraint("user_id", "interval_list_id", name="pk_user_id_interval_list_id"),
+        ForeignKeyConstraint(["user_id"], ["user.id"]),
+        ForeignKeyConstraint(["interval_list_id"], ["interval_list.id"]),
     )

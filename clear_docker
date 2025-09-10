@@ -1,0 +1,2 @@
+docker volume rm berber_learn_postgres_data
+docker system prune -a --volumes

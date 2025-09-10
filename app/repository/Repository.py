@@ -13,6 +13,7 @@ from app.DTO import (
     Valid_Interval,
     Valid_Interval_List,
     Valid_Link_Interval_List,
+    Valid_User_Settings,
 )
 
 class Repository:
@@ -80,6 +81,13 @@ class Repository:
         self,
         DTO: Valid_Link_Interval_List,
     ) -> Link_Interval_List:
+        ...
+
+    @ds.create_model(User_Settings)
+    async def _create_user_settings(
+        self,
+        DTO: Valid_User_Settings,
+    ) -> User_Settings:
         ...
 
     @ds.get_model(User)
@@ -168,6 +176,15 @@ class Repository:
         interval_id: int = None,
         interval_list_id: int = None,
     ) -> Link_Interval_List|None:
+        ...
+
+    @ds.get_model(User_Settings)
+    async def _get_user_settings(
+        self,
+        *,
+        user_id: int = None,
+        interval_list_id: int = None,
+    ) -> User_Settings|None:
         ...
 
     async def _get_or_create_user(
@@ -422,18 +439,19 @@ class Repository:
         user_id: int
     ) -> list[Interval_List] | list:
         results = await self.session.execute(
-            select(Interval_List).where(
-                Interval_List.id.in_(
-                    select(Dictionary.interval_list_id).where(
-                        Dictionary.user_id == user_id
-                    )
+            select(Interval_List)
+            .where(
+                Interval_List.id == (
+                    select(User_Settings.interval_list_id)
+                    .where(User_Settings.user_id == user_id)
                 )
             )
         )
         return results.scalars().all()
 
-    async def _get_classic_interval(
+    async def _create_classic_interval(
         self,
+        user_id: int,
         interval_list_name: str,
         interval_lengths: list[int],
     ) -> None:
@@ -461,4 +479,15 @@ class Repository:
                         interval_list_id=interval_list.id,
                     ),
                 )
+        user_settings = await self._get_user_settings(
+            user_id=user_id, 
+            interval_list_id=interval_list.id
+        )
+        if not user_settings:
+            await self._create_user_settings(
+                Valid_User_Settings(
+                    user_id=user_id,
+                    interval_list_id=interval_list.id
+                )
+            )
         return None

@@ -9,7 +9,6 @@ from sqlalchemy import String
 from app.config import settings
 
 type int8 = int
-type varchar31 = str
 type varchar255 = str
 
 engine = create_async_engine(
@@ -30,7 +29,6 @@ class Base(DeclarativeBase):
 
     type_annotation_map = {
         int8: BIGINT,
-        varchar31: String(31),
         varchar255: String(255),
     }
     

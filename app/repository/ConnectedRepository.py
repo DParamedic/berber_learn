@@ -155,9 +155,10 @@ class ConnectedRepository(Repository):
 
     @classmethod
     @ds.connect
-    async def get_classic_interval(
+    async def create_classic_interval(
         cls,
+        user_id: int,
         interval_list_name: str,
         interval_lengths: list[int],
     ) -> None:
-        return cls._get_classic_interval
+        return cls._create_classic_interval

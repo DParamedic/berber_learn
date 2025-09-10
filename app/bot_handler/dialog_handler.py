@@ -16,8 +16,7 @@ async def start(update: Update, context: CustomContext):
         text="Привет!",
     )
     user = await Repository.get_or_create_user(
-        Valid_User(telegram_id=context.chat_id)
-    )
+        Valid_User(telegram_id=context.user_id))
     context.custom_user_data.set_dictionary(id=None, user_id=user.id)
     # start daily check
     context.job_queue.run_daily(
@@ -26,7 +25,8 @@ async def start(update: Update, context: CustomContext):
         chat_id=context.chat_id,
         user_id=context.user_id,
     )
-    await Repository.get_classic_interval(
+    await Repository.create_classic_interval(
+        context.custom_user_data.dictionary.user_id,
         "classic",
         [1 << grad for grad in range(10)],
     )
