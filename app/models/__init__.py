@@ -10,16 +10,3 @@ from app.models.models import (
     Link_Interval_List,
     User_Settings,
 )
-
-__all__ = [
-    "User",
-    "Dictionary",
-    "Language",
-    "Word",
-    "Note",
-    "Word_Translate",
-    "Interval",
-    "Interval_List",
-    "Link_Interval_List",
-    "User_Settings",
-]

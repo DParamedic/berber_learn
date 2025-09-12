@@ -7,16 +7,18 @@ from telegram.ext import (
 
 from app.bot_handler import *
 from app.bot_handler import dialog_handler as handler
+from app.bot_handler import new_handler
 
-conversation_handler = ConversationHandler(
-    entry_points=[CommandHandler('start', handler.start)],
+
+loop_handler = ConversationHandler(
+    entry_points=[CommandHandler('start', handler.start_loop)],
     states={
         LOOP: [
             CommandHandler('add_word', handler.add_word),
             CommandHandler('ch_word', handler.change_word),
             CommandHandler('del_word', handler.delete_word),
             CommandHandler('add_dict', handler.add_dict),
-            CommandHandler('sel_dict', handler.select_dict),                
+            CommandHandler('sel_dict', handler.select_dict),
             CommandHandler('about', handler.about),
             CommandHandler('settings', handler.settings),
             CommandHandler('start_event', handler.send_word),
@@ -31,7 +33,7 @@ conversation_handler = ConversationHandler(
         INP_WORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.input_word)],
         INP_TRANSLATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.input_translate)],
         INP_NOTE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.input_note)],
-        DICT_ATTR: [
+        SET_DICT_ATTR: [
             CommandHandler('set_main_lang', handler.set_main_language),
             CommandHandler('set_tr_lang', handler.set_translation_language),
             CommandHandler('set_interval_list', handler.sel_interval_list),
@@ -58,5 +60,15 @@ conversation_handler = ConversationHandler(
         SEL_DICT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.input_selected_dict)],
         MESSAGE_TRANSLATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.send_translate)],
     },
-    fallbacks=[CommandHandler('cancel', handler.cancel)]
+    fallbacks=[
+        CommandHandler('cancel', handler.cancel),
+    ],
+    map_to_parent={
+        CANCEL: START_LOOP
+    }
+)
+conversation_handler = ConversationHandler(
+    entry_points=[CommandHandler('start', handler.start)],
+    states={START_LOOP: handler.start_loop},
+    fallbacks=[CommandHandler('stop', handler.stop)]
 )

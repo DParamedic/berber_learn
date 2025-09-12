@@ -159,7 +159,7 @@ async def add_dict(update: Update, context: CustomContext):
         "/set_interval_list\n"
         "/confirm"
         )
-    return DICT_ATTR
+    return SET_DICT_ATTR
 # dict_attr
 async def set_main_language(update: Update, context: CustomContext):
     await update.message.reply_text(
@@ -175,7 +175,7 @@ async def input_main_language(update: Update, context: CustomContext):
         context.custom_user_data.set_language(main_language=main_language)
         await update.message.reply_text(
             f"Записано: {context.custom_user_data.language.main_language}")
-        return DICT_ATTR
+        return SET_DICT_ATTR
     else:
         await update.message.reply_text("Название пустое. Не подходит.")
         return INP_MAIN_LANGUAGE
@@ -196,7 +196,7 @@ async def input_translation_language(update: Update, context: CustomContext):
         await update.message.reply_text(
             f"Записано: {context.custom_user_data.language.translation_language}"
             )
-        return DICT_ATTR
+        return SET_DICT_ATTR
     else:
         await update.message.reply_text("Название пустое. Не подходит.")
         return INP_TRANSLATE_LANGUAGE
@@ -224,7 +224,7 @@ async def select_list_interval(update: Update, context: CustomContext):
         del context.custom_user_data.interval_ids
         await update.message.reply_text(
             f"Выбран список интервалов {input}")
-        return DICT_ATTR
+        return SET_DICT_ATTR
     else:
         await update.message.reply_text(f"Введен некорректный символ <{input}>")
         return SEL_INTERVAL_LIST
@@ -510,34 +510,33 @@ async def test(update: Update, context: CustomContext):
     return LOOP
 # loop
 async def send_word(update: Update, context: CustomContext):
-    UD = context.custom_user_data
-    UD.dialog_active = True
+    ud = context.custom_user_data
+    ud.dialog_active = True
     # Активация диалога, чтоб напоминание не пришло,
     # если пользователь активировал диалог до напоминания
-    if not UD.done_event:
-        UD.done_event = True
+    ud.done_event = not ud.done_event
     if not isinstance(
-        UD.word_translations_order, Iterable):
-        UD.word_translations_order = convert_tree_to_generator(
+        ud.word_translations_order, Iterable):
+        ud.word_translations_order = convert_tree_to_generator(
             convert_to_tree(
                 await Repository.update_word_translations_count(
-                    UD.dictionary.user_id
+                    ud.dictionary.user_id
                 )
             )
         )
     return await _send_word(update, context)
 
 async def _send_word(update: Update, context: CustomContext):
-    UD = context.custom_user_data
-    if UD.current_element:
-        if UD.current_element.dictionary_name != UD.current_dictionary:
-            UD.current_dictionary = UD.current_element.dictionary_name
+    ud = context.custom_user_data
+    if ud.current_element:
+        if ud.current_element.dictionary_name != ud.current_dictionary:
+            ud.current_dictionary = ud.current_element.dictionary_name
             await update.message.reply_text(
-                f"Словарь {UD.current_dictionary}.")
-        if UD.current_element.word_name != UD.current_word:
-            UD.current_word = UD.current_element.word_name
+                f"Словарь {ud.current_dictionary}.")
+        if ud.current_element.word_name != ud.current_word:
+            ud.current_word = ud.current_element.word_name
             await update.message.reply_text(
-                f"Введите перевод для {UD.current_word}:")
+                f"Введите перевод для {ud.current_word}:")
         else:
             await update.message.reply_text("Введите другой перевод:")
         return MESSAGE_TRANSLATE
@@ -549,27 +548,27 @@ async def _send_word(update: Update, context: CustomContext):
 
 # message_translate
 async def send_translate(update: Update, context: CustomContext):
-    UD = context.custom_user_data
-    UD.choice_count -= 1
+    ud = context.custom_user_data
+    ud.choice_count -= 1
     # Обработка ввода
-    if update.message.text in UD.current_element.translations:
+    if update.message.text in ud.current_element.translations:
         await update.message.reply_text("Верно.")
-        word_translate = UD.current_element.translations.pop(update.message.text)
+        word_translate = ud.current_element.translations.pop(update.message.text)
         await Repository.update_word_translate_interval_up(*word_translate)
     else:
         await update.message.reply_text("Ошибка.")
     # Обработка неверных ответов и обнуление current_element
     # Это необходимо для того, чтобы следующий элемент был получен через next
-    if not UD.choice_count:
-        if UD.current_element.translations:
+    if not ud.choice_count:
+        if ud.current_element.translations:
             text = "Правильные переводы:\n"
             message = await update.message.reply_text(text)
-            for translate, word_translate in UD.current_element.translations.items():
+            for translate, word_translate in ud.current_element.translations.items():
                 text += f"{translate}\n"
                 message = await message.edit_text(text)
                 await Repository.update_word_translate_interval_down(
                     *word_translate[:-1])
-        del UD.current_element
+        del ud.current_element
     return await _send_word(update, context)
 
 # events
@@ -593,7 +592,7 @@ async def repetition_reminder(context: CustomContext) -> None:
     return None
 
 # loop
-async def cancel(update: Update, context: CustomContext):
+async def stop(update: Update, context: CustomContext):
     await update.message.reply_text('Завершение работы...')
     context.custom_user_data.clear()
     return END
