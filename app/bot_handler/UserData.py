@@ -41,7 +41,10 @@ class UserData:
 
     def set_dictionary(self, **kwargs):
         if not isinstance(self._dictionary, Extra_Dictionary):
-            self._dictionary = Extra_Dictionary.model_construct()
+            self._dictionary = Extra_Dictionary.model_construct(
+                id = None,
+                language_represent = None,
+            )
         for attr, value in kwargs.items():
             setattr(self._dictionary, attr, value)
 

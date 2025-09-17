@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload, aliased
 
-from app.repository import Decorators as ds
+from app.repository import decorators as ds
 from app.models import *
 from app.DTO import (
     Valid_Dictionary,
