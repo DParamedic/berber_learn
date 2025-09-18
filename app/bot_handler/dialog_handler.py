@@ -455,12 +455,8 @@ async def select_dict(update: Update, context: CustomContext):
             in dictionaries
         ]
         await update.message.reply_text("Выберете словарь из списка:")
-        for (
-            idx,
-            main_language,
-            translate_language,
-            interval_list,
-        ) in await Repository.get_dict_info(dictionaries):
+        for idx, (main_language, translate_language, interval_list)\
+            in enumerate(await Repository.get_dict_info(dictionaries)):
             await update.message.reply_text(
                 f"{idx + 1}: {main_language}, {translate_language}.\n"
                 f"Список интервалов: {interval_list}"
@@ -594,5 +590,5 @@ async def repetition_reminder(context: CustomContext) -> None:
 # loop
 async def stop(update: Update, context: CustomContext):
     await update.message.reply_text('Завершение работы...')
-    context.custom_user_data.clear()
+    context.custom_user_data.full_clear()
     return END

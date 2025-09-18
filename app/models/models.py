@@ -33,7 +33,8 @@ class Dictionary(Base):
 
     user = relationship("User", back_populates="dictionaries", uselist=False)
     language: Mapped["Language"] = relationship(back_populates="dictionaries", uselist=False)
-    
+    interval_list: Mapped["Interval_List"] = relationship(back_populates="dictionaries", uselist=False)
+
     word_translate: Mapped["Word_Translate"] = relationship(back_populates="dictionary")
 
     __table_args__ = (
@@ -149,6 +150,7 @@ class Interval_List(Base):
     name: Mapped[varchar255] = mapped_column(unique=True)
 
     link_interval_lists: Mapped["Link_Interval_List"] = relationship(back_populates="interval_list")
+    dictionaries: Mapped[list[Dictionary]] = relationship(back_populates="interval_list")
 
 class Link_Interval_List(Base):
     """Модель для связи списков с их интервалами.

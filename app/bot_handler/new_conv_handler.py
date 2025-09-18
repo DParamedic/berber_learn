@@ -14,7 +14,7 @@ loop_handler = ConversationHandler(
             CallbackQueryHandler(handler.set_word_attr, pattern=f"^{cnds.R_ADD_WORD}$"),
             CallbackQueryHandler(handler.search_word, pattern=f"^{cnds.R_SEARCH_WORD}$"),
             CallbackQueryHandler(handler.set_dictionary_attr, pattern=f"^{cnds.R_ADD_DICT}$"),
-            CallbackQueryHandler(handler.select_dictionary, pattern=f"^{cnds.R_SEL_DICT}$"),
+            CallbackQueryHandler(handler.search_dictionary, pattern=f"^{cnds.R_MANAGE_DICT}$"),
             CallbackQueryHandler(handler.about, pattern=f"^{cnds.R_ABOUT}$"),
             CallbackQueryHandler(handler.settings, pattern=f"^{cnds.R_SETTINGS}$"),
             CallbackQueryHandler(handler.start_repetition, pattern=f"^{cnds.R_START_REPETITION}$"),
@@ -29,9 +29,20 @@ loop_handler = ConversationHandler(
         cnds.C_INP_MAIN_LANGUAGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.input_main_language)],
         cnds.C_INP_TRANSLATE_LANGUAGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.input_translation_language)],
         cnds.C_SEL_INTERVAL_LIST: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.select_list_interval)],
+        
+        cnds.C_SEL_DICT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.select_dictionary_number)],
+        cnds.C_CHOICE_ACTION_WITH_DICT: [
+            CallbackQueryHandler(handler.use_dictionary, pattern=f"^{cnds.R_SEL_DICT}$"),
+            CallbackQueryHandler(handler.delete_dictionary, pattern=f"^{cnds.R_DEL_DICT}$"),
+        ],
+        cnds.C_CONFIRM_DEL_DICT: [
+            CallbackQueryHandler(handler.confirm_dictionary_deletion, pattern=f"^{cnds.R_CONFIRM_DD}$"),
+            CallbackQueryHandler(handler.undo_dictionary_deletion, pattern=f"^{cnds.R_UNDO_DD}$"),
+        ],
         cnds.C_EMPTY: [],
     },
     fallbacks=[
+        CommandHandler('cancel', handler.cancel),
         CallbackQueryHandler(handler.cancel, pattern=f"^{cnds.R_CANCEL}$"),
         CallbackQueryHandler(handler.confirm, pattern=f"^{cnds.R_CONFIRM}$"),
     ],

@@ -110,6 +110,17 @@ class Repository:
     ) -> Dictionary|None:
         ...
 
+    async def _get_dictionary_with_info_by_id(self, id: int) -> Dictionary|None:
+        dictionary = await self.session.execute(
+            select(Dictionary)
+            .options(
+                selectinload(Dictionary.language),
+                selectinload(Dictionary.interval_list),
+            )
+            .where(Dictionary.id == id)
+        )
+        return dictionary.scalar_one_or_none()
+
     @ds.get_model(Language)
     async def _get_language(
         self,
@@ -209,22 +220,19 @@ class Repository:
 
     async def _get_dict_info(
         self,
-        dictionaries: list[Dictionary],
-    ) -> list[tuple[int, str, str, str]]|list:
-        info = []
-        for idx, dictionary in enumerate(dictionaries):
-            language = await self._get_language(id=dictionary.language_id)
-            interval_list = await self._get_interval_list(
-                id=dictionary.interval_list_id)
-            info.append(
-                (
-                    idx,
-                    language.main_language,
-                    language.translation_language,
-                    interval_list.name,
-                )
-            )
-        return info
+        user_id: int,
+    ) -> list[tuple[str, str, str]]|list:
+        info = await self.session.execute(
+            select(Dictionary.id, Language.main_language,
+                   Language.translation_language, Interval_List.name)
+            .select_from(User)
+            .join(Dictionary, Dictionary.user_id == User.id)
+            .join(Language, Language.id == Dictionary.language_id)
+            .join(Interval_List, Interval_List.id == Dictionary.interval_list_id)
+            .where(User.id == user_id)
+        )
+        return info.all()
+
     async def _get_or_create_language(
         self,
         DTO: Valid_Language,

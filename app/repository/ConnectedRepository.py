@@ -41,6 +41,12 @@ class ConnectedRepository(Repository):
 
     @classmethod
     @connect
+    async def get_dictionary_with_info(cls, id: int) -> Dictionary|None:
+        return cls._get_dictionary_with_info_by_id
+    
+
+    @classmethod
+    @connect
     async def get_dictionaries(
         cls,
         user_id: int,
@@ -51,7 +57,7 @@ class ConnectedRepository(Repository):
     @connect
     async def get_dict_info(
         cls,
-        dictionaries: list[Dictionary],
+        user_id: int,
     ):
         return cls._get_dict_info
 

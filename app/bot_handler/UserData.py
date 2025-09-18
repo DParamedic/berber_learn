@@ -197,13 +197,13 @@ class UserData:
 
     @property
     def dictionary_ids(self):
+        if not isinstance(self._dictionary_ids, list):
+            self._dictionary_ids = []
         return self._dictionary_ids
     @dictionary_ids.setter
     def dictionary_ids(self, dictionary_ids: list[int]):
-        if not isinstance(self._dictionary_ids, list):
-            self._dictionary_ids = []
-        for id in dictionary_ids:
-            self._dictionary_ids.append(id)
+        if isinstance(dictionary_ids, list):
+            self._dictionary_ids = dictionary_ids
     @dictionary_ids.deleter
     def dictionary_ids(self):
         self._dictionary_ids = None
@@ -291,5 +291,21 @@ class UserData:
     def done_event(self, done_event: bool):
         self._done_event = done_event
 
-    def clear(self):
+    def full_clear(self):
         self.__init__()
+
+    def clear(self):
+        self._old_word = None
+        self._word = None
+        self._translations = None
+        self._note = None
+        self._word_translate = None
+        self._language = None
+        self._dictionary_ids = None
+        self._interval_ids = None
+        self._word_translations_order = None
+        self._current_object = None
+        self._current_dictionary = None
+        self._current_word = None
+        self._choice_count = None
+        self._dialog_active = False
