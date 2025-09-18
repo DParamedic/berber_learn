@@ -57,18 +57,19 @@ async def start_headline(update: Update, context: CustomContext, start_over: boo
             reply_markup=InlineKeyboardMarkup(buttons),
         )
     else:
-        if not context.custom_user_data.dictionary.language_represent:
+        await update.callback_query.answer()
+        if context.custom_user_data.dictionary.id:
             text = f"Активный словарь: {context.custom_user_data.dictionary.language_represent}"
         else:
             text = "Словарь не выбран."
-        await update.callback_query.answer()
         await update.callback_query.edit_message_text(
             text, reply_markup=InlineKeyboardMarkup(buttons))
     return cnds.C_ACTION
     
 
 async def set_dictionary_attr(update: Update, context: CustomContext, start_over: bool = False):
-    context.custom_user_data.dialog_active = True
+    ud = context.custom_user_data
+    ud.dialog_active = True
     buttons = [
         [
             InlineKeyboardButton("Установить основной язык", callback_data=cnds.R_MAIN_LANGUAGE),
@@ -83,11 +84,25 @@ async def set_dictionary_attr(update: Update, context: CustomContext, start_over
         ],
     ]
     if start_over:
-        await update.message.reply_text(
+        text = (
             "Вы в меню добавления атрибутов словаря.\n"
-            f"Добавленная информация: {context.custom_user_data.dictionary}",
-            reply_markup=InlineKeyboardMarkup(buttons),
+            f"{f'Добавленная информация:\n'
+                if ud.dictionary.interval_list_id
+                or ud.language.main_language
+                or ud.language.translation_language
+                else 'Ничего не добавлено.'}"
+            f"{f"Основной язык: {ud.language.main_language}\n"
+                if ud.language.main_language
+                else ''}"
+            f"{f"Язык перевода: {ud.language.translation_language}\n"
+                if ud.language.translation_language
+                else ''}"
+            f"{f'Список интервалов: {"classic"}'
+                if ud.dictionary.interval_list_id
+                else ''}"
         )
+        await update.message.reply_text(
+            text, reply_markup=InlineKeyboardMarkup(buttons))
     else:
         await update.callback_query.answer()
         await update.callback_query.edit_message_text(
@@ -95,7 +110,6 @@ async def set_dictionary_attr(update: Update, context: CustomContext, start_over
             reply_markup=InlineKeyboardMarkup(buttons),
         )
     return cnds.C_SET_DICT_ATTR
-
 
 async def set_main_language(update: Update, context: CustomContext):
     await update.callback_query.answer()
@@ -111,8 +125,6 @@ async def input_main_language(update: Update, context: CustomContext):
     main_language = update.message.text
     if main_language:
         context.custom_user_data.set_language(main_language=main_language.strip())
-        await update.message.reply_text(
-            f"Записано: {context.custom_user_data.language.main_language}")
         return await set_dictionary_attr(update, context, True)
     else:
         await update.message.reply_text(
@@ -136,8 +148,6 @@ async def input_translation_language(update: Update, context: CustomContext):
     if translation_language:
         context.custom_user_data.set_language(
             translation_language=translation_language.strip())
-        await update.message.reply_text(
-            f"Записано: {context.custom_user_data.language.translation_language}")
         return await set_dictionary_attr(update, context, True)
     else:
         await update.message.reply_text(
@@ -171,8 +181,6 @@ async def select_list_interval(update: Update, context: CustomContext):
             interval_list_id=context.custom_user_data.interval_ids[int(input) - 1]
         )
         del context.custom_user_data.interval_ids
-        await update.message.reply_text(
-            f"Выбран список интервалов {input}")
         return await set_dictionary_attr(update, context, True)
     else:
         await update.message.reply_text(
@@ -185,6 +193,10 @@ async def confirm_dict(update: Update, context: CustomContext):
     await update.callback_query.answer()
     language = await Repository.get_or_create_language(
         context.custom_user_data.language.validate())
+    context.custom_user_data.set_dictionary(
+        language_represent=f"{context.custom_user_data.language.main_language}"
+        f", {context.custom_user_data.language.translation_language}"
+    )
     del context.custom_user_data.language
     context.custom_user_data.set_dictionary(language_id=language.id)
     dictionary = await Repository.get_dictionary(
@@ -194,7 +206,7 @@ async def confirm_dict(update: Update, context: CustomContext):
     if dictionary:
         await update.callback_query.edit_message_text(
             "Такой словарь уже существует.",
-            one_button_kwd("Ясно", cnds.R_CONFIRM),
+            reply_markup=one_button_kwd("Ясно", cnds.R_CONFIRM),
         )
     else:
         if not hasattr(context.custom_user_data.dictionary, "interval_list_id"):
@@ -205,12 +217,12 @@ async def confirm_dict(update: Update, context: CustomContext):
             context.custom_user_data.dictionary.validate())
         await update.callback_query.edit_message_text(
             "Словарь создан.",
-            one_button_kwd("Ясно", cnds.R_CONFIRM),
+            reply_markup=one_button_kwd("Ясно", cnds.R_CONFIRM),
         )
         if not context.custom_user_data.dictionary.id:
             context.custom_user_data.set_dictionary(id=dictionary.id)
     context.custom_user_data.dialog_active = False
-    return cnds.R_CONFIRM
+    return cnds.C_EMPTY
 
 async def select_dictionary(update: Update, context: CustomContext):
     ...
@@ -227,6 +239,9 @@ async def start_repetition(update: Update, context: CustomContext):
 async def cancel(update: Update, context: CustomContext):
     return await start_headline(update, context)
 
+async def confirm(update: Update, context: CustomContext):
+    return await start_headline(update, context)
+
 # loop
 async def about(update: Update, context: CustomContext):
     await update.callback_query.answer()
@@ -236,18 +251,15 @@ async def about(update: Update, context: CustomContext):
         "при изучении иностранных языков.\n",
         reply_markup=one_button_kwd("Ясно", cnds.R_CONFIRM)
     )
-    return cnds.R_CONDITION_ABOUT
+    return cnds.C_EMPTY
 # loop
 async def settings(update: Update, context: CustomContext):
     await update.callback_query.answer()
     await update.callback_query.edit_message_text(
         "Здесь пока ничего нет.",
-        reply_markup=one_button_kwd("Ясно", cnds.R_CANCEL)
+        reply_markup=one_button_kwd("Ясно", cnds.R_CONFIRM)
     )
-    return cnds.R_CONDITION_SETTINGS
-
-async def confirm(update: Update, context: CustomContext):
-    print("We here")
+    return cnds.C_EMPTY
 
 async def stop(update: Update, context: CustomContext) -> None:
     await update.message.reply_text('Завершение работы...')

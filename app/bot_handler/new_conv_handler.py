@@ -3,7 +3,6 @@ from telegram.ext import (
     MessageHandler,
     ConversationHandler,
     CallbackQueryHandler,
-    InlineQueryHandler,
     filters,
     )
 
@@ -30,25 +29,20 @@ loop_handler = ConversationHandler(
         cnds.C_INP_MAIN_LANGUAGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.input_main_language)],
         cnds.C_INP_TRANSLATE_LANGUAGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.input_translation_language)],
         cnds.C_SEL_INTERVAL_LIST: [MessageHandler(filters.TEXT & ~filters.COMMAND, handler.select_list_interval)],
+        cnds.C_EMPTY: [],
     },
     fallbacks=[
         CallbackQueryHandler(handler.cancel, pattern=f"^{cnds.R_CANCEL}$"),
         CallbackQueryHandler(handler.confirm, pattern=f"^{cnds.R_CONFIRM}$"),
-        CallbackQueryHandler(handler.confirm, pattern=f"^{cnds.R_CONDITION_ABOUT}$"),
-        CallbackQueryHandler(handler.confirm, pattern=f"^{cnds.R_CONDITION_SETTINGS}$"),
     ],
     map_to_parent={
-        cnds.R_CANCEL: cnds.C_ROOT,
-        cnds.R_CONFIRM: cnds.C_ROOT,
-        cnds.R_CONDITION_ABOUT: cnds.C_ROOT,
-        cnds.R_CONDITION_SETTINGS: cnds.C_ROOT,
+        cnds.C_ACTION: cnds.C_ACTION,
     }
 )
 
 conv_handler = ConversationHandler(
     entry_points=[CommandHandler('start', handler.start)],
     states={
-        cnds.C_ROOT: [CallbackQueryHandler(handler.start_headline, pattern = f"^{cnds.R_CANCEL}$|^{cnds.R_CONFIRM}$")],
         cnds.C_ACTION: [loop_handler],
     },
     fallbacks=[CommandHandler('stop', handler.stop)],

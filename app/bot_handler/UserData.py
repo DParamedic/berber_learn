@@ -43,6 +43,9 @@ class UserData:
         if not isinstance(self._dictionary, Extra_Dictionary):
             self._dictionary = Extra_Dictionary.model_construct(
                 id = None,
+                user_id = None,
+                language_id = None,
+                interval_list_id = None,
                 language_represent = None,
             )
         for attr, value in kwargs.items():
@@ -185,12 +188,12 @@ class UserData:
 
     def set_language(self, **kwargs):
         if not isinstance(self._language, Extra_Language):
-            self._language = Extra_Language.model_construct()
+            self._language = Extra_Language.model_construct(
+                main_language = None,
+                translation_language = None,
+            )
         for attr, value in kwargs.items():
             setattr(self._language, attr, value)
-
-    def clear(self):
-        self.__init__()
 
     @property
     def dictionary_ids(self):
@@ -287,4 +290,6 @@ class UserData:
     @done_event.setter
     def done_event(self, done_event: bool):
         self._done_event = done_event
-        
+
+    def clear(self):
+        self.__init__()
