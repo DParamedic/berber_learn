@@ -24,4 +24,4 @@ R_END = ConversationHandler.END
     R_START_REPETITION,
     R_CONFIRM,
     R_CANCEL,
-) = map(str, range(13))
+) = map(str, range(17))

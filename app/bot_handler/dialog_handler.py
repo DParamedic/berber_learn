@@ -17,7 +17,7 @@ async def start(update: Update, context: CustomContext):
     )
     user = await Repository.get_or_create_user(
         Valid_User(telegram_id=context.user_id))
-    context.custom_user_data.set_dictionary(id=None, user_id=user.id)
+    context.custom_user_data.set_main_dictionary(id=None, user_id=user.id)
     # start daily check
     context.job_queue.run_daily(
         repetition_reminder,
@@ -26,7 +26,7 @@ async def start(update: Update, context: CustomContext):
         user_id=context.user_id,
     )
     await Repository.create_classic_interval(
-        context.custom_user_data.dictionary.user_id,
+        context.custom_user_data.main_dictionary.user_id,
         "classic",
         [1 << grad for grad in range(10)],
     )
@@ -46,7 +46,7 @@ async def start(update: Update, context: CustomContext):
 # loop
 async def add_word(update: Update, context: CustomContext):
     context.custom_user_data.dialog_active = True
-    if not context.custom_user_data.dictionary.id:
+    if not context.custom_user_data.main_dictionary.id:
         await update.message.reply_text("Не выбран словарь!")
         return LOOP
     await update.message.reply_text(
@@ -117,7 +117,7 @@ async def input_note(update: Update, context: CustomContext):
 # set_word_attr
 async def confirm_new_word(update: Update, context: CustomContext):
     context.custom_user_data.set_word_translate(
-        dictionary_id=context.custom_user_data.dictionary.id,
+        dictionary_id=context.custom_user_data.main_dictionary.id,
         interval_id=1,
         count = 0,
     )
@@ -205,7 +205,7 @@ async def sel_interval_list(update: Update, context: CustomContext):
     await update.message.reply_text(
         "Введите номер списка интервалов из представленных ниже.")
     interval_lists = await Repository.get_interval_lists_by_user(
-        context.custom_user_data.dictionary.user_id)
+        context.custom_user_data.main_dictionary.user_id)
     context.custom_user_data.interval_ids = [
         interval_list.id
         for interval_list
@@ -218,7 +218,7 @@ async def sel_interval_list(update: Update, context: CustomContext):
 async def select_list_interval(update: Update, context: CustomContext):
     input = update.message.text
     if input.isnumeric():
-        context.custom_user_data.set_dictionary(
+        context.custom_user_data.set_main_dictionary(
             interval_list_id=context.custom_user_data.interval_ids[int(input) - 1]
         )
         del context.custom_user_data.interval_ids
@@ -234,22 +234,22 @@ async def confirm_dict(update: Update, context: CustomContext):
         context.custom_user_data.language.validate()
     )
     del context.custom_user_data.language
-    context.custom_user_data.set_dictionary(language_id=language.id)
+    context.custom_user_data.set_main_dictionary(language_id=language.id)
     dictionary = await Repository.get_dictionary(
-            user_id=context.custom_user_data.dictionary.user_id,
-            language_id=context.custom_user_data.dictionary.language_id,
+            user_id=context.custom_user_data.main_dictionary.user_id,
+            language_id=context.custom_user_data.main_dictionary.language_id,
     )
     if dictionary:
         await update.message.reply_text("Уже существует такой словарь!")
     else:
         dictionary = await Repository.create_dictionary(
-            context.custom_user_data.dictionary.validate())
+            context.custom_user_data.main_dictionary.validate())
         await update.message.reply_text("Словарь создан!")
     context.custom_user_data.dialog_active = False
     return LOOP
 
 async def change_word(update: Update, context: CustomContext):
-    if not context.custom_user_data.dictionary.id:
+    if not context.custom_user_data.main_dictionary.id:
         await update.message.reply_text("Не выбран словарь!")
         return LOOP
     context.custom_user_data.dialog_active = True
@@ -263,7 +263,7 @@ async def input_search_value_ch(update: Update, context: CustomContext):
             f"Поиск {searched_word} в базе данных...")
         DTO = await Repository.get_word_translations_inf(
                 searched_word,
-                context.custom_user_data.dictionary.id,
+                context.custom_user_data.main_dictionary.id,
         )
         if DTO:
             await update.message.reply_text(
@@ -359,13 +359,13 @@ async def input_note_ch(update: Update, context: CustomContext):
 async def confirm_changed_word(update: Update, context: CustomContext):
     # Удаляем старые Word_Translations
     await Repository.delete_word_translations(
-            context.custom_user_data.dictionary.id,
+            context.custom_user_data.main_dictionary.id,
             context.custom_user_data.old_word.content,
     )
     del context.custom_user_data.old_word
     # Записываем новые
     context.custom_user_data.set_word_translate(
-        dictionary_id=context.custom_user_data.dictionary.id,)
+        dictionary_id=context.custom_user_data.main_dictionary.id,)
     word = await Repository.get_or_create_word(
         context.custom_user_data.word.validate())
     del context.custom_user_data.word
@@ -391,7 +391,7 @@ async def confirm_changed_word(update: Update, context: CustomContext):
     return LOOP
 
 async def delete_word(update: Update, context: CustomContext):
-    if not context.custom_user_data.dictionary.id:
+    if not context.custom_user_data.main_dictionary.id:
         await update.message.reply_text("Не выбран словарь!")
         return LOOP
     context.custom_user_data.dialog_active = True
@@ -405,7 +405,7 @@ async def input_search_value_del(update: Update, context: CustomContext):
             f"Поиск {searched_word} в базе данных...")
         DTO = await Repository.get_word_translations_inf(
                 searched_word,
-                context.custom_user_data.dictionary.id,
+                context.custom_user_data.main_dictionary.id,
         )
         if DTO:
             context.custom_user_data.set_word(content=searched_word)
@@ -430,7 +430,7 @@ async def confirm_del(update: Update, context: CustomContext):
     await update.message.reply_text(
         f"Удаление {context.custom_user_data.word.content}...")
     await Repository.delete_word_translations(
-            context.custom_user_data.dictionary.id,
+            context.custom_user_data.main_dictionary.id,
             context.custom_user_data.word.content,
     )
     del context.custom_user_data.word
@@ -447,7 +447,7 @@ async def revoke_del(update: Update, context: CustomContext):
 async def select_dict(update: Update, context: CustomContext):
     context.custom_user_data.dialog_active = True
     dictionaries = await Repository.get_dictionaries(
-        context.custom_user_data.dictionary.user_id)
+        context.custom_user_data.main_dictionary.user_id)
     if dictionaries:
         context.custom_user_data.dictionary_ids = [
             dictionary.id
@@ -472,7 +472,7 @@ async def select_dict(update: Update, context: CustomContext):
 async def input_selected_dict(update: Update, context: CustomContext):
     input = update.message.text
     if input.isnumeric():
-        context.custom_user_data.dictionary.id = context.custom_user_data.dictionary_ids[int(input) - 1]
+        context.custom_user_data.main_dictionary.id = context.custom_user_data.dictionary_ids[int(input) - 1]
         del context.custom_user_data.dictionary_ids
         await update.message.reply_text(f"Выбран словарь {input}")
         context.custom_user_data.dialog_active = False
@@ -516,7 +516,7 @@ async def send_word(update: Update, context: CustomContext):
         ud.word_translations_order = convert_tree_to_generator(
             convert_to_tree(
                 await Repository.update_word_translations_count(
-                    ud.dictionary.user_id
+                    ud.main_dictionary.user_id
                 )
             )
         )

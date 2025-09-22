@@ -63,6 +63,14 @@ class ConnectedRepository(Repository):
 
     @classmethod
     @connect
+    async def delete_dictionary_by_id(
+        cls,
+        id: int,
+    ) -> bool:
+        return cls._delete_dictionary_by_id
+
+    @classmethod
+    @connect
     async def get_or_create_language(
         cls,
         DTO: Valid_Language,

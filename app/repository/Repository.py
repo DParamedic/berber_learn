@@ -120,6 +120,10 @@ class Repository:
             .where(Dictionary.id == id)
         )
         return dictionary.scalar_one_or_none()
+    
+    @ds.delete_model_by_id(Dictionary)
+    async def _delete_dictionary_by_id(self, id: int) -> bool:
+        ...
 
     @ds.get_model(Language)
     async def _get_language(

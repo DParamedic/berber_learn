@@ -1,6 +1,6 @@
 from typing import Iterator, Generator
 
-from app.models import Word_Translate
+from app.models import Dictionary
 from app.DTO import (
     Extra_Dictionary,
     Extra_Language,
@@ -11,6 +11,7 @@ from app.DTO import (
 
 class UserData:
     def __init__(self):
+        self._main_dictionary: Extra_Dictionary|None = None
         self._dictionary: Extra_Dictionary|None = None
         self._old_word: Extra_Word|None = None
         self._word: Extra_Word|None = None
@@ -29,19 +30,60 @@ class UserData:
         self._done_event: bool = False
 
     @property
+    def main_dictionary(self):
+        return self._main_dictionary
+    @main_dictionary.setter
+    def main_dictionary(self, other: Extra_Dictionary):
+        other.user_id = self._main_dictionary.user_id
+        other.language_represent = f"{other.main_language}, {other.translation_language}"
+        self._main_dictionary = Extra_Dictionary.model_construct(
+            **{
+                key: value for key, value in other.model_dump().items()
+                if key in [
+                    "user_id",
+                    "id",
+                    "language_id",
+                    "interval_list_id",
+                    "language_represent"
+                ]
+            }
+        )
+    @main_dictionary.deleter
+    def main_dictionary(self):
+        attributes = dict(
+            user_id = self._main_dictionary.user_id,
+            id = None,
+            language_id = None,
+            interval_list_id = None,
+            language_represent = None,
+        )
+        self._main_dictionary = Extra_Dictionary.model_construct(**attributes)
+
+    def set_main_dictionary(self, **kwargs):
+        if not isinstance(self._main_dictionary, Extra_Dictionary):
+            self._main_dictionary = Extra_Dictionary.model_construct(
+                id = None,
+                language_id = None,
+                interval_list_id = None,
+                language_represent = None,
+            )
+        for attr, value in kwargs.items():
+            setattr(self._main_dictionary, attr, value)
+
+    @property
     def dictionary(self):
         return self._dictionary
     @dictionary.setter
     def dictionary(self, other: Extra_Dictionary):
         self._dictionary = Extra_Dictionary.model_construct(
-            other.model_dump(other))
+            other.model_dump())
     @dictionary.deleter
     def dictionary(self):
-        print("Этот объект не предназначен для удаления.")
+        self._dictionary = None
 
     def set_dictionary(self, **kwargs):
         if not isinstance(self._dictionary, Extra_Dictionary):
-            self._dictionary = Extra_Dictionary.model_construct(
+            self.dictionary = Extra_Dictionary.model_construct(
                 id = None,
                 user_id = None,
                 language_id = None,
@@ -295,6 +337,7 @@ class UserData:
         self.__init__()
 
     def clear(self):
+        self.dictionary = None
         self._old_word = None
         self._word = None
         self._translations = None

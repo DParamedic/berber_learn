@@ -1,11 +1,8 @@
 import datetime
-import asyncio
-from typing import Iterable
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 
 from app.bot_handler import conditions as cnds
-from app.models import models
 from app.repository import ConnectedRepository as Repository
 from app.DTO import Valid_User, convert_to_tree, convert_tree_to_generator
 from app.bot_handler.CustomContext import CustomContext
@@ -18,7 +15,7 @@ def one_button_kwd(text_for_button: str, callback_data: str) -> InlineKeyboardMa
 async def start(update: Update, context: CustomContext):
     user = await Repository.get_or_create_user(
         Valid_User(telegram_id=context.user_id))
-    context.custom_user_data.set_dictionary(user_id=user.id)
+    context.custom_user_data.set_main_dictionary(user_id=user.id)
     # start daily check
     context.job_queue.run_daily(
         repetition_reminder,
@@ -27,7 +24,7 @@ async def start(update: Update, context: CustomContext):
         user_id=context.user_id,
     )
     await Repository.create_classic_interval(
-        context.custom_user_data.dictionary.user_id,
+        context.custom_user_data.main_dictionary.user_id,
         "classic",
         [1 << grad for grad in range(10)],
     )
@@ -44,7 +41,7 @@ async def start_headline(update: Update, context: CustomContext, start_over: boo
         ],
         [
             InlineKeyboardButton("Создать словарь", callback_data=cnds.R_ADD_DICT),
-            InlineKeyboardButton("Выбрать словарь", callback_data=cnds.R_SEL_DICT),
+            InlineKeyboardButton("Управлять словарями", callback_data=cnds.R_MANAGE_DICT),
         ],
         [
             InlineKeyboardButton("О приложении", callback_data=cnds.R_ABOUT),
@@ -58,8 +55,8 @@ async def start_headline(update: Update, context: CustomContext, start_over: boo
         )
     else:
         await update.callback_query.answer()
-        if context.custom_user_data.dictionary.id:
-            text = f"Активный словарь: {context.custom_user_data.dictionary.language_represent}"
+        if context.custom_user_data.main_dictionary.id:
+            text = f"Активный словарь: {context.custom_user_data.main_dictionary.language_represent}"
         else:
             text = "Словарь не выбран."
         await update.callback_query.edit_message_text(
@@ -87,7 +84,7 @@ async def set_dictionary_attr(update: Update, context: CustomContext, start_over
         text = (
             "Вы в меню добавления атрибутов словаря.\n"
             f"{f'Добавленная информация:\n'
-                if ud.dictionary.interval_list_id
+                if ud.main_dictionary.interval_list_id
                 or ud.language.main_language
                 or ud.language.translation_language
                 else 'Ничего не добавлено.'}"
@@ -98,7 +95,7 @@ async def set_dictionary_attr(update: Update, context: CustomContext, start_over
                 if ud.language.translation_language
                 else ''}"
             f"{f'Список интервалов: {"classic"}'
-                if ud.dictionary.interval_list_id
+                if ud.main_dictionary.interval_list_id
                 else ''}"
         )
         await update.message.reply_text(
@@ -160,7 +157,7 @@ async def sel_interval_list(update: Update, context: CustomContext):
     await update.callback_query.answer()
     text = "Введите номер списка интервалов из представленных ниже.\n"
     interval_lists = await Repository.get_interval_lists_by_user(
-        context.custom_user_data.dictionary.user_id)
+        context.custom_user_data.main_dictionary.user_id)
     context.custom_user_data.interval_ids = [
         interval_list.id
         for interval_list
@@ -193,12 +190,14 @@ async def confirm_dict(update: Update, context: CustomContext):
     await update.callback_query.answer()
     language = await Repository.get_or_create_language(
         context.custom_user_data.language.validate())
-    context.custom_user_data.set_dictionary(
+    context.custom_user_data.set_main_dictionary(
         language_represent=f"{context.custom_user_data.language.main_language}"
         f", {context.custom_user_data.language.translation_language}"
     )
     del context.custom_user_data.language
-    context.custom_user_data.set_dictionary(language_id=language.id)
+    context.custom_user_data.set_dictionary(
+        user_id=context.custom_user_data.main_dictionary.user_id,
+        language_id=language.id)
     dictionary = await Repository.get_dictionary(
         user_id=context.custom_user_data.dictionary.user_id,
         language_id=context.custom_user_data.dictionary.language_id,
@@ -209,7 +208,7 @@ async def confirm_dict(update: Update, context: CustomContext):
             reply_markup=one_button_kwd("Ясно", cnds.R_CONFIRM),
         )
     else:
-        if not hasattr(context.custom_user_data.dictionary, "interval_list_id"):
+        if not context.custom_user_data.dictionary.interval_list_id:
             interval_list = await Repository.get_interval_list(name="classic")
             context.custom_user_data.set_dictionary(
                 interval_list_id = interval_list.id)
@@ -219,9 +218,9 @@ async def confirm_dict(update: Update, context: CustomContext):
             "Словарь создан.",
             reply_markup=one_button_kwd("Ясно", cnds.R_CONFIRM),
         )
-        if not context.custom_user_data.dictionary.id:
-            context.custom_user_data.set_dictionary(id=dictionary.id)
-    context.custom_user_data.dialog_active = False
+        if not context.custom_user_data.main_dictionary.id:
+            context.custom_user_data.main_dictionary = context.custom_user_data.dictionary
+    del context.custom_user_data.dictionary
     return cnds.C_EMPTY
 
 async def search_dictionary(update: Update, context: CustomContext):
@@ -229,8 +228,8 @@ async def search_dictionary(update: Update, context: CustomContext):
     text = "Выбери словарь из списка:\n"
     for idx, (dictionary_id, main_language, translate_language, interval_list)\
         in enumerate(await Repository.get_dict_info(
-            context.custom_user_data.dictionary.user_id)):
-        text += f"{idx + 1}. {main_language}, {translate_language}, {interval_list}"
+            context.custom_user_data.main_dictionary.user_id)):
+        text += f"{idx + 1}. {main_language}, {translate_language}, {interval_list}\n"
         context.custom_user_data.dictionary_ids.append(dictionary_id)
     await update.callback_query.edit_message_text(
         text, reply_markup=one_button_kwd("Отмена", cnds.R_CANCEL))
@@ -239,9 +238,18 @@ async def search_dictionary(update: Update, context: CustomContext):
 async def select_dictionary_number(update: Update, context: CustomContext):
     input = update.message.text
     if input.isnumeric():
-        current_dictionary_id = context.custom_user_data.dictionary_ids[int(input) - 1]
+        dictionary = await Repository.get_dictionary_with_info(
+                context.custom_user_data.dictionary_ids[int(input) - 1])
+        context.custom_user_data.set_dictionary(
+            id=dictionary.id,
+            language_id=dictionary.language_id,
+            interval_list_id=dictionary.interval_list_id,
+            main_language=dictionary.language.main_language,
+            translation_language=dictionary.language.translation_language,
+            interval_list_name=dictionary.interval_list.name,
+        )
         del context.custom_user_data.dictionary_ids
-        return await search_dictionary(update, context, current_dictionary_id)
+        return await choice_action(update, context)
     else:
         await update.message.reply_text(
             f"Некорректный номер <{input}>, введи иной:",
@@ -249,37 +257,67 @@ async def select_dictionary_number(update: Update, context: CustomContext):
         )
         return cnds.C_SEL_DICT
 
-async def search_dictionary(update: Update, context: CustomContext,
-                            current_dictionary_id: int | None = None):
-    dictionary = await Repository.get_dictionary_with_info(current_dictionary_id)
+async def choice_action(update: Update, context: CustomContext, start_over: bool = True):
+    dictionary = context.custom_user_data.dictionary
     buttons = [[
         InlineKeyboardButton("Выбрать", callback_data=cnds.R_SEL_DICT),
         InlineKeyboardButton("Удалить", callback_data=cnds.R_DEL_DICT),
     ]]
-    text = f"Выбранный словарь:\n{dictionary.language.main_language},\
-        {dictionary.language.translation_language},\
-            {dictionary.interval_list.name}"
-    await update.message.reply_text(
-        text, reply_markup=InlineKeyboardMarkup(buttons))
+    if start_over:
+        await update.message.reply_text(
+            f"Выбранный словарь:\n{dictionary.main_language}, "
+            f"{dictionary.translation_language}, {dictionary.interval_list_name}",
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+    else:
+        await update.callback_query.answer()
+        await update.callback_query.edit_message_text(
+            f"Выбранный словарь:\n{dictionary.main_language}, "
+            f"{dictionary.translation_language}, {dictionary.interval_list_name}",
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
     return cnds.C_CHOICE_ACTION_WITH_DICT
 
 async def use_dictionary(update: Update, context: CustomContext):
     await update.callback_query.answer()
-    # Need to add confirm_dictionary
+    context.custom_user_data.main_dictionary = context.custom_user_data.dictionary
+    del context.custom_user_data.dictionary
     await update.callback_query.edit_message_text(
-        "Выбран словарь",
+        "Словарь выбран.",
         reply_markup=one_button_kwd("Ясно", cnds.R_CONFIRM),
     )
     return cnds.C_EMPTY
 
 async def delete_dictionary(update: Update, context: CustomContext):
+    await update.callback_query.answer()
+    dictionary = context.custom_user_data.dictionary
+    buttons = [[
+        InlineKeyboardButton("Подтвердить", callback_data=cnds.R_CONFIRM_DD),
+        InlineKeyboardButton("Назад", callback_data=cnds.R_UNDO_DD),
+    ]]
+    await update.callback_query.edit_message_text(
+        f"Выбранный словарь:\n{dictionary.main_language}, "
+        f"{dictionary.translation_language}, {dictionary.interval_list_name}"
+        "\nУдалить?",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
     return cnds.C_CONFIRM_DEL_DICT
 
 async def confirm_dictionary_deletion(update: Update, context: CustomContext):
+    await update.callback_query.answer()
+    if context.custom_user_data.dictionary.id == context.custom_user_data.main_dictionary.id:
+        del context.custom_user_data.main_dictionary
+    await Repository.delete_dictionary_by_id(
+        context.custom_user_data.dictionary.id)
+    del context.custom_user_data.dictionary.id
+    await update.callback_query.edit_message_text(
+        "Словарь успешно удален.",
+        reply_markup=one_button_kwd("Ясно", cnds.R_CONFIRM),
+    )
     return cnds.C_EMPTY
 
 async def undo_dictionary_deletion(update: Update, context: CustomContext):
-    return cnds.C_CHOICE_ACTION_WITH_DICT
+    return await choice_action(update, context, False)
 
 async def set_word_attr(update: Update, context: CustomContext):
     ...
@@ -292,9 +330,11 @@ async def start_repetition(update: Update, context: CustomContext):
 
 async def cancel(update: Update, context: CustomContext):
     context.custom_user_data.clear()
+    context.custom_user_data.dialog_active = False
     return await start_headline(update, context)
 
 async def confirm(update: Update, context: CustomContext):
+    context.custom_user_data.dialog_active = False
     return await start_headline(update, context)
 
 # loop
